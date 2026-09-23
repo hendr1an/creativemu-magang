@@ -59,6 +59,7 @@ export default function MentorCard() {
                 {new Date(mentor.bergabung).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
               </span>
             </div>
+            
           </div>
         </>
       ) : (

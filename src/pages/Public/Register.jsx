@@ -16,24 +16,26 @@ export default function Register() {
   const [quotaLoading, setQuotaLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState(null);
+  const [sukses, setSukses] = useState(false);
 
-  // cek kuota real-time
   useEffect(() => {
     if (!form.tanggal_mulai) { setQuota(null); return; }
     let aktif = true;
     setQuotaLoading(true);
-    supabase.functions.invoke('check-quota', {
-      body: {
-        tanggal_mulai: form.tanggal_mulai,
-        durasi: Number(form.durasi_magang),
-        satuan: form.satuan,
-        tanggal_selesai: form.tanggal_selesai_custom || undefined,
-      },
-    }).then(({ data, error }) => {
-      if (!aktif) return;
-      setQuotaLoading(false);
-      setQuota(error ? { error: true } : data);
-    });
+    supabase.functions
+      .invoke('check-quota', {
+        body: {
+          tanggal_mulai: form.tanggal_mulai,
+          durasi: Number(form.durasi_magang),
+          satuan: form.satuan,
+          tanggal_selesai: form.tanggal_selesai_custom || undefined,
+        },
+      })
+      .then(({ data, error }) => {
+        if (!aktif) return;
+        setQuotaLoading(false);
+        setQuota(error ? { error: true } : data);
+      });
     return () => { aktif = false; };
   }, [form.tanggal_mulai, form.durasi_magang, form.satuan, form.tanggal_selesai_custom]);
 
@@ -41,7 +43,7 @@ export default function Register() {
 
   function pilihCv(e) {
     const file = e.target.files?.[0] ?? null;
-    if (!file) return setCvFile(null);
+    if (!file) return;
     if (!file.name.toLowerCase().endsWith('.pdf'))
       return setFeedback({ type: 'error', text: 'CV harus berformat PDF.' });
     if (file.size > 5 * 1024 * 1024)
@@ -50,17 +52,12 @@ export default function Register() {
     setCvFile(file);
   }
 
-  // tampilkan tanggal selesai efektif (dari respons kuota)
-  const selesaiEfektif = quota?.tanggal_selesai;
-
   async function handleSubmit(e) {
     e.preventDefault();
     setFeedback(null);
     if (!cvFile) return setFeedback({ type: 'error', text: 'Lampirkan CV (PDF).' });
     if (!/^(\+?62|0)8\d{7,12}$/.test(form.nomor_whatsapp.replace(/[\s-]/g, '')))
       return setFeedback({ type: 'error', text: 'Nomor WhatsApp tidak valid. Contoh: 081234567890' });
-    if (form.tanggal_selesai_custom && form.tanggal_selesai_custom <= form.tanggal_mulai)
-      return setFeedback({ type: 'error', text: 'Tanggal selesai custom harus setelah tanggal mulai.' });
 
     setSubmitting(true);
     try {
@@ -76,7 +73,7 @@ export default function Register() {
       if (cek?.error) throw new Error(cek.message);
       if (!cek?.tersedia) {
         const penuh = (cek.detail_bulan || []).filter((m) => m.penuh).map((m) => m.bulan);
-        throw new Error(`Kuota penuh pada bulan: ${penuh.join(', ')}. Pilih tanggal lain.`);
+        throw new Error(`Kuota penuh pada: ${penuh.join(', ')}. Pilih tanggal lain.`);
       }
 
       const ext = cvFile.name.split('.').pop().toLowerCase();
@@ -102,151 +99,223 @@ export default function Register() {
           throw new Error('Email ini sudah terdaftar sebagai pendaftar aktif.');
         throw new Error('Gagal menyimpan: ' + insErr.message);
       }
-
-      setFeedback({ type: 'success', text: '🎉 Pendaftaran terkirim! Tim kami akan menghubungi kamu setelah seleksi.' });
-      setForm({ nama_lengkap: '', email: '', nomor_whatsapp: '', instansi: '', portofolio_url: '', tanggal_mulai: '', durasi_magang: 1, satuan: 'bulan', tanggal_selesai_custom: '' });
-      setCvFile(null); setQuota(null);
+      setSukses(true);
     } catch (err) {
       setFeedback({ type: 'error', text: err.message });
-    } finally { setSubmitting(false); }
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const selesaiEfektif = quota?.tanggal_selesai;
+
+  if (sukses) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+        <div className="anim-pop w-full max-w-md rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+          <h2 className="mt-6 text-xl font-semibold text-slate-900">Pendaftaran Terkirim</h2>
+          <p className="mt-3 text-sm leading-relaxed text-slate-500">
+            Pengajuanmu sudah kami terima. Tim Creativemu Academy akan
+            menghubungimu melalui WhatsApp dan Email setelah proses seleksi.
+          </p>
+          <Link to="/login"
+            className="mt-8 inline-block w-full rounded-lg bg-slate-900 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">
+            Kembali ke Login
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 py-10 px-4">
-      <div className="mx-auto max-w-2xl">
-                <div className="anim-up rounded-t-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-violet-600 bg-[length:200%_auto] p-6 text-white [animation:gradientMove_8s_linear_infinite]">
-          <h1 className="text-2xl font-bold"><span className="anim-wiggle mr-1">🚀</span> Pendaftaran Magang</h1>
-          <h1 className="text-2xl font-bold">Pendaftaran Magang</h1>
-          <p className="text-sm text-indigo-100">Creativemu Academy — Sedayu</p>
+    <div className="min-h-screen bg-slate-50 px-4 py-12">
+      <div className="mx-auto w-full max-w-lg">
+
+        {/* ===== HEADER ===== */}
+        <div className="anim-up text-center">
+          <img src="/images/logo-creativemu.png" alt="Creativemu Academy"
+            className="mx-auto h-10 w-auto" />
+          <h1 className="mt-6 text-2xl font-semibold tracking-tight text-slate-900">
+            Daftar Magang
+          </h1>
+          <p className="mt-2 text-sm text-slate-500">
+            Isi formulir di bawah untuk mengajukan magang di Creativemu Academy
+          </p>
         </div>
 
-                <form onSubmit={handleSubmit} className="anim-up space-y-5 rounded-b-2xl bg-white p-6 shadow-lg [animation-delay:200ms]">
+        {/* ===== FORM ===== */}
+        <form onSubmit={handleSubmit}
+          className="anim-up mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 [animation-delay:100ms]">
+
           {feedback && (
-            <p className={`rounded-lg p-3 text-sm ${
-              feedback.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'
-            }`}>{feedback.text}</p>
+            <div className="anim-down mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+              <p className="text-sm font-medium text-red-600">{feedback.text}</p>
+            </div>
           )}
 
-                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <div className="space-y-5">
+
+            {/* data diri */}
             <div>
-              <label className="text-sm font-medium text-slate-700">Nama Lengkap *</label>
+              <label className="text-sm font-medium text-slate-700">Nama Lengkap</label>
               <input required value={form.nama_lengkap}
                 onChange={(e) => update('nama_lengkap', e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:outline-none" />
+                className="mt-1.5 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-[#9647FE] focus:ring-2 focus:ring-purple-200"
+                placeholder="Nama sesuai identitas" />
             </div>
+
             <div>
-              <label className="text-sm font-medium text-slate-700">Email *</label>
+              <label className="text-sm font-medium text-slate-700">Email</label>
               <input type="email" required value={form.email}
                 onChange={(e) => update('email', e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:outline-none" />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-slate-700">Nomor WhatsApp *</label>
-              <input required placeholder="08xxxxxxxxxx" value={form.nomor_whatsapp}
-                onChange={(e) => update('nomor_whatsapp', e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:outline-none" />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-slate-700">Asal Instansi/Sekolah/Kampus *</label>
-              <input required placeholder="mis. SMKN 1 Sedayu / Universitas X" value={form.instansi}
-                onChange={(e) => update('instansi', e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:outline-none" />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="text-sm font-medium text-slate-700">Link Portofolio (opsional)</label>
-              <input placeholder="github.com/..." value={form.portofolio_url}
-                onChange={(e) => update('portofolio_url', e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:outline-none" />
+                className="mt-1.5 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-[#9647FE] focus:ring-2 focus:ring-purple-200"
+                placeholder="nama@email.com" />
             </div>
 
-            {/* ===== Tanggal mulai ===== */}
             <div>
-              <label className="text-sm font-medium text-slate-700">Tanggal Rencana Mulai *</label>
+              <label className="text-sm font-medium text-slate-700">Nomor WhatsApp</label>
+              <input required value={form.nomor_whatsapp}
+                onChange={(e) => update('nomor_whatsapp', e.target.value)}
+                className="mt-1.5 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-[#9647FE] focus:ring-2 focus:ring-purple-200"
+                placeholder="08xxxxxxxxxx" />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-slate-700">Asal Instansi</label>
+              <input required value={form.instansi}
+                onChange={(e) => update('instansi', e.target.value)}
+                className="mt-1.5 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-[#9647FE] focus:ring-2 focus:ring-purple-200"
+                placeholder="Sekolah / Kampus" />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-slate-700">
+                Link Portofolio <span className="font-normal text-slate-400">(opsional)</span>
+              </label>
+              <input value={form.portofolio_url}
+                onChange={(e) => update('portofolio_url', e.target.value)}
+                className="mt-1.5 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-[#9647FE] focus:ring-2 focus:ring-purple-200"
+                placeholder="github.com/username" />
+            </div>
+
+            <div className="border-t border-slate-100 pt-5">
+              <label className="text-sm font-medium text-slate-700">Tanggal Mulai</label>
               <input type="date" required min={HARI_INI} value={form.tanggal_mulai}
                 onChange={(e) => update('tanggal_mulai', e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:outline-none" />
+                className="mt-1.5 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-[#9647FE] focus:ring-2 focus:ring-purple-200" />
             </div>
 
-            {/* ===== Durasi: satuan + angka ===== */}
-                        <div>
-              <label className="text-sm font-medium text-slate-700">Durasi Magang *</label>
-              <div className="mt-1 flex flex-col gap-2 sm:flex-row">
+            <div>
+              <label className="text-sm font-medium text-slate-700">Durasi</label>
+              <div className="mt-1.5 flex gap-2">
                 <select value={form.satuan}
                   onChange={(e) => { update('satuan', e.target.value); update('durasi_magang', 1); }}
-                  className="w-full rounded-lg border border-slate-300 px-2 py-2 text-sm sm:w-24">
+                  className="w-24 rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-[#9647FE] focus:ring-2 focus:ring-purple-200">
                   <option value="bulan">Bulan</option>
                   <option value="minggu">Minggu</option>
                 </select>
                 <select value={form.durasi_magang}
                   onChange={(e) => update('durasi_magang', Number(e.target.value))}
-                  className="w-full rounded-lg border border-slate-300 px-2 py-2 text-sm sm:flex-1">
+                  className="flex-1 rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-[#9647FE] focus:ring-2 focus:ring-purple-200">
                   {Array.from({ length: form.satuan === 'minggu' ? 26 : 6 }, (_, i) => i + 1).map((n) => (
                     <option key={n} value={n}>{n} {form.satuan}</option>
                   ))}
                 </select>
               </div>
+              {form.tanggal_mulai && !form.tanggal_selesai_custom && selesaiEfektif && (
+                <p className="mt-2 text-xs text-slate-400">
+                  Berakhir otomatis: {new Date(selesaiEfektif).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </p>
+              )}
             </div>
 
-            {/* ===== ⭐ Tanggal selesai CUSTOM (opsional) ===== */}
-            <div className="sm:col-span-2">
+            <div>
               <label className="text-sm font-medium text-slate-700">
-                Tanggal Selesai Khusus <span className="font-normal text-slate-400">(opsional — mis. sesuai surat kampus; kosongkan untuk otomatis dari durasi)</span>
+                Tanggal Selesai Khusus <span className="font-normal text-slate-400">(opsional)</span>
               </label>
               <input type="date" value={form.tanggal_selesai_custom}
                 min={form.tanggal_mulai}
                 onChange={(e) => update('tanggal_selesai_custom', e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:outline-none" />
-              {form.tanggal_mulai && !form.tanggal_selesai_custom && selesaiEfektif && (
-                <p className="mt-1 text-xs text-slate-400">
-                  ℹ️ Otomatis: selesai {new Date(selesaiEfektif).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-slate-700">CV (PDF, maks 5 MB) *</label>
-            <input type="file" accept="application/pdf" onChange={pilihCv}
-              className="mt-1 w-full text-sm text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-indigo-600" />
-          </div>
-
-          {quotaLoading && <p className="text-sm text-slate-500">Memeriksa kuota...</p>}
-          {quota?.error && (
-            <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-700">
-              Tidak dapat memeriksa kuota saat ini. Coba beberapa saat lagi.
-            </p>
-          )}
-                    {quota && !quota.error && (
-            <div className={`anim-pop rounded-lg p-4 text-sm ${
-              quota.tersedia ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
-            }`}>
-              <p className="font-semibold">
-                {quota.tersedia ? '✓ Kuota tersedia — silakan daftar!' : '✗ Kuota penuh — pilih tanggal lain.'}
+                className="mt-1.5 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-[#9647FE] focus:ring-2 focus:ring-purple-200" />
+              <p className="mt-1.5 text-xs text-slate-400">
+                Sesuai surat kampus — kosongkan untuk otomatis dari durasi
               </p>
-              <div className="mt-2 space-y-1.5">
-                {quota.detail_bulan?.map((m) => (
-                  <div key={m.bulan} className="flex items-center gap-2">
-                    <span className="w-16 font-mono text-xs">{m.bulan}</span>
-                    <div className="h-2 flex-1 overflow-hidden rounded bg-slate-200">
-                      <div className={`h-full ${m.penuh ? 'bg-red-500' : 'bg-green-500'}`}
-                        style={{ width: `${Math.min((m.terisi / MAX_QUOTA) * 100, 100)}%` }} />
-                    </div>
-                    <span className="w-14 text-xs">{m.terisi}/{MAX_QUOTA}</span>
-                  </div>
-                ))}
-              </div>
             </div>
-          )}
 
-                    <button type="submit" disabled={submitting || (quota && !quota.error && !quota.tersedia)}
-            className="btn-press w-full rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 py-3.5 font-bold text-white shadow-lg shadow-indigo-500/30 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50">
-            {submitting ? 'Mengirim...' : 'Kirim Pendaftaran'}
-          </button>
+            <div className="border-t border-slate-100 pt-5">
+              <label className="text-sm font-medium text-slate-700">CV / Resume</label>
+              <label className={`mt-1.5 flex cursor-pointer items-center justify-between rounded-lg border-2 px-4 py-4 transition ${
+                cvFile
+                  ? 'border-green-400 bg-green-50'
+                  : 'border-dashed border-slate-300 bg-white hover:border-slate-400'}`}>
+                <div className="flex min-w-0 items-center gap-3">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke={cvFile ? '#16a34a' : '#94a3b8'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="17 8 12 3 7 8" />
+                    <line x1="12" y1="3" x2="12" y2="15" />
+                  </svg>
+                  <span className={`truncate text-sm ${cvFile ? 'font-medium text-green-700' : 'text-slate-500'}`}>
+                    {cvFile ? cvFile.name : 'Unggah CV (PDF, maks 5 MB)'}
+                  </span>
+                </div>
+                {cvFile && (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                )}
+                <input type="file" accept="application/pdf" onChange={pilihCv} className="hidden" />
+              </label>
+            </div>
 
-          <p className="text-center text-sm text-slate-500">
-            Sudah punya akun? <Link to="/login" className="font-semibold text-indigo-600">Masuk →</Link>
-          </p>
+            {/* kuota */}
+            {quotaLoading && (
+              <p className="text-center text-xs text-slate-400">Memeriksa kuota...</p>
+            )}
+            {quota && !quota.error && quota.tersedia !== undefined && (
+              <div className={`rounded-lg border p-4 ${
+                quota.tersedia
+                  ? 'border-green-200 bg-green-50'
+                  : 'border-red-200 bg-red-50'}`}>
+                <p className={`text-sm font-medium ${quota.tersedia ? 'text-green-700' : 'text-red-600'}`}>
+                  {quota.tersedia ? 'Kuota tersedia' : 'Kuota penuh — pilih tanggal lain'}
+                </p>
+                <div className="mt-3 space-y-1.5">
+                  {quota.detail_bulan?.map((m) => (
+                    <div key={m.bulan} className="flex items-center gap-3">
+                      <span className="w-14 text-[11px] font-medium text-slate-500">{m.bulan}</span>
+                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-200">
+                        <div className={`h-full rounded-full ${m.penuh ? 'bg-red-400' : 'bg-green-400'}`}
+                          style={{ width: `${Math.min((m.terisi / MAX_QUOTA) * 100, 100)}%` }} />
+                      </div>
+                      <span className="w-10 text-right text-[11px] text-slate-400">{m.terisi}/{MAX_QUOTA}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <button type="submit"
+              disabled={submitting || (quota && !quota.error && quota.tersedia === false)}
+              className="w-full rounded-lg bg-[#9647FE] py-3 text-sm font-semibold text-white transition hover:bg-[#7c36d9] focus:outline-none focus:ring-4 focus:ring-purple-200 disabled:opacity-50">
+              {submitting ? 'Mengirim...' : 'Kirim Pendaftaran'}
+            </button>
+
+          </div>
         </form>
+
+        <p className="mt-6 text-center text-sm text-slate-500">
+          Sudah punya akun?{' '}
+          <Link to="/login" className="font-semibold text-[#9647FE] hover:underline">
+            Masuk
+          </Link>
+        </p>
+
       </div>
     </div>
   );

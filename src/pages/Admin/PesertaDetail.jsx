@@ -101,7 +101,16 @@ export default function PesertaDetail() {
   if (error) {
     return (
       <div>
-        <Link to="/admin/peserta" className="text-sm font-semibold text-indigo-600 hover:underline">← Kembali</Link>
+        <Link to="/admin/peserta"
+  className="group inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600 hover:shadow-md active:scale-95">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+    className="transition-transform duration-200 group-hover:-translate-x-1">
+    <line x1="19" y1="12" x2="5" y2="12" />
+    <polyline points="12 19 5 12 12 5" />
+  </svg>
+  <span className="hidden sm:inline">Kembali ke Data Peserta</span>
+  <span className="sm:hidden">Kembali</span>
+</Link>
         <p className="anim-down mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-600">⚠️ {error}</p>
       </div>
     );
@@ -125,8 +134,15 @@ export default function PesertaDetail() {
 
   return (
     <div>
-      <Link to="/admin/peserta" className="text-[13px] font-semibold text-indigo-600 transition hover:text-indigo-800 hover:underline">
-        ← Kembali ke Data Peserta
+            <Link to="/admin/peserta"
+        className="group inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600 hover:shadow-md active:scale-95">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+          className="transition-transform duration-200 group-hover:-translate-x-1">
+          <line x1="19" y1="12" x2="5" y2="12" />
+          <polyline points="12 19 5 12 12 5" />
+        </svg>
+        <span className="hidden sm:inline">Kembali ke Data Peserta</span>
+        <span className="sm:hidden">Kembali</span>
       </Link>
 
       {/* ===== HERO header peserta ===== */}

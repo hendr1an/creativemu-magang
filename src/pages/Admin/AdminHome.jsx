@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 import { namaBulan, fmtTanggal } from '../../lib/format';
 import { CountUp, SkeletonCard } from '../../components/Skeleton';
@@ -39,6 +40,9 @@ export default function AdminHome() {
   const [bulanBuka, setBulanBuka] = useState(null);
   const [pesertaBulan, setPesertaBulan] = useState([]);
   const [muatBulan, setMuatBulan] = useState(false);
+
+  // ⭐ useRef DI DALAM komponen
+  const kuotaRef = useRef(null);
 
   const bulanIni = new Date().toISOString().slice(0, 7);
 
@@ -116,35 +120,51 @@ export default function AdminHome() {
 
       {error && <p className="anim-down mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-600">{error}</p>}
 
-      {/* ===== kartu ringkasan ===== */}
+      {/* ===== kartu ringkasan (klikable) ===== */}
       {loading ? (
         <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
           <SkeletonCard /><SkeletonCard /><SkeletonCard />
         </div>
       ) : (
         <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
-          <div className="anim-up card-hover rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
-            <p className="text-2xl">📥</p>
+
+          <Link to="/admin/pengajuan"
+            className="anim-up card-hover group cursor-pointer rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
+            <div className="flex items-center justify-between">
+              <p className="text-2xl">📥</p>
+              <span className="text-[10px] font-bold text-indigo-400 opacity-0 transition group-hover:opacity-100">Buka →</span>
+            </div>
             <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Pengajuan Menunggu</p>
             <p className="mt-1 text-3xl font-extrabold text-slate-800"><CountUp value={stat.pending} /></p>
-          </div>
-          <div className="anim-up card-hover rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100 [animation-delay:100ms]">
-            <p className="text-2xl">🧑‍💻</p>
+          </Link>
+
+          <Link to="/admin/peserta"
+            className="anim-up card-hover group cursor-pointer rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100 [animation-delay:100ms]">
+            <div className="flex items-center justify-between">
+              <p className="text-2xl">🧑‍💻</p>
+              <span className="text-[10px] font-bold text-indigo-400 opacity-0 transition group-hover:opacity-100">Buka →</span>
+            </div>
             <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Peserta Aktif</p>
             <p className="mt-1 text-3xl font-extrabold text-slate-800"><CountUp value={stat.aktif} /></p>
-          </div>
-          <div className="anim-up card-hover rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100 [animation-delay:200ms]">
-            <p className="text-2xl">📊</p>
+          </Link>
+
+          <button onClick={() => kuotaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+            className="anim-up card-hover group cursor-pointer rounded-2xl bg-white p-5 text-left shadow-sm ring-1 ring-slate-100 [animation-delay:200ms]">
+            <div className="flex items-center justify-between">
+              <p className="text-2xl">📊</p>
+              <span className="text-[10px] font-bold text-indigo-400 opacity-0 transition group-hover:opacity-100">Lihat ↓</span>
+            </div>
             <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Kuota {namaBulan(bulanIni)}</p>
             <p className="mt-1 text-3xl font-extrabold text-slate-800">
               <CountUp value={kuotaSekarang?.kuota_terisi ?? 0} />
               <span className="text-base font-normal text-slate-400">/{KUOTA_MAKS}</span>
             </p>
-          </div>
+          </button>
+
         </div>
       )}
 
-      {/* ================= PRESENSI PESERTA — versi cantik ================= */}
+      {/* ===== PRESENSI PESERTA ===== */}
       <div className="anim-up mt-8 [animation-delay:250ms]">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-base font-bold text-slate-800">🕐 Presensi Peserta</h2>
@@ -174,7 +194,6 @@ export default function AdminHome() {
                     status === 'Belum' ? 'ring-slate-100' : 'ring-transparent'}`}
                   style={{ animationDelay: `${i * 70}ms` }}>
 
-                  {/* strip warna status di kiri */}
                   <div className={`absolute inset-y-0 left-0 w-1.5 ${BADGE_PRESENSI[status] ?? 'bg-slate-300'}`} />
 
                   <div className="flex items-start justify-between gap-3 pl-3">
@@ -188,13 +207,11 @@ export default function AdminHome() {
                       </div>
                     </div>
 
-                    {/* badge status */}
                     <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-extrabold text-white ${BADGE_PRESENSI[status] ?? 'bg-slate-300'}`}>
                       {status === 'Belum' ? 'BELUM' : status.toUpperCase()}
                     </span>
                   </div>
 
-                  {/* baris waktu */}
                   <div className="mt-3 flex items-center justify-between gap-2 pl-3">
                     {sudahPresensi ? (
                       <div className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-slate-50 py-2">
@@ -230,49 +247,52 @@ export default function AdminHome() {
         )}
       </div>
 
-      {/* ===== Kuota 12 bulan ===== */}
-      <h2 className="anim-up mt-8 text-base font-bold text-slate-800 [animation-delay:300ms]">
-        📊 Slot 12 Bulan ke Depan
-        <span className="text-xs font-normal text-slate-400"> — klik bulan untuk melihat pesertanya</span>
-      </h2>
-      {loading ? (
-        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
-          {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
-        </div>
-      ) : (
-        <div className="mt-3 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
-          {kuota.map((k, i) => {
-            const w = warnaKuota(Number(k.persen_terisi));
-            const aktif = k.bulan_label === bulanIni;
-            return (
-              <button key={k.bulan_label} onClick={() => bukaBulan(k.bulan_label)}
-                style={{ animationDelay: `${i * 60}ms` }}
-                className={`anim-up card-hover rounded-xl border bg-white p-4 text-left shadow-sm hover:ring-2 hover:ring-indigo-300 ${
-                  aktif ? 'border-indigo-400 ring-2 ring-indigo-100' : 'border-slate-200'}`}>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-slate-700">
-                    {namaBulan(k.bulan_label)}{aktif && ' ⭐'}
-                  </span>
-                  {w.badge && (
-                    <span className={`rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold ${w.warna}`}>
-                      {w.badge}
+      {/* ===== Kuota 12 bulan — dengan ref untuk scroll ===== */}
+      <div ref={kuotaRef} className="mt-8 scroll-mt-20">
+        <h2 className="anim-up text-base font-bold text-slate-800 [animation-delay:300ms]">
+          📊 Slot 12 Bulan ke Depan
+          <span className="text-xs font-normal text-slate-400"> — klik bulan untuk melihat pesertanya</span>
+        </h2>
+
+        {loading ? (
+          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
+          </div>
+        ) : (
+          <div className="mt-3 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+            {kuota.map((k, i) => {
+              const w = warnaKuota(Number(k.persen_terisi));
+              const aktif = k.bulan_label === bulanIni;
+              return (
+                <button key={k.bulan_label} onClick={() => bukaBulan(k.bulan_label)}
+                  style={{ animationDelay: `${i * 60}ms` }}
+                  className={`anim-up card-hover rounded-xl border bg-white p-4 text-left shadow-sm hover:ring-2 hover:ring-indigo-300 ${
+                    aktif ? 'border-indigo-400 ring-2 ring-indigo-100' : 'border-slate-200'}`}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-slate-700">
+                      {namaBulan(k.bulan_label)}{aktif && ' ⭐'}
                     </span>
-                  )}
-                </div>
-                <p className={`mt-2 text-3xl font-extrabold ${w.warna}`}>
-                  <CountUp value={k.kuota_terisi} />
-                  <span className="text-base font-normal text-slate-400">/{KUOTA_MAKS}</span>
-                </p>
-                <div className="mt-2 h-2 overflow-hidden rounded bg-slate-100">
-                  <div className={`h-full ${w.bar} anim-bar`}
-                    style={{ width: `${Math.min(Number(k.persen_terisi), 100)}%` }} />
-                </div>
-                <p className="mt-1.5 text-xs text-slate-400">sisa {k.kuota_tersisa} slot · ▼ lihat peserta</p>
-              </button>
-            );
-          })}
-        </div>
-      )}
+                    {w.badge && (
+                      <span className={`rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold ${w.warna}`}>
+                        {w.badge}
+                      </span>
+                    )}
+                  </div>
+                  <p className={`mt-2 text-3xl font-extrabold ${w.warna}`}>
+                    <CountUp value={k.kuota_terisi} />
+                    <span className="text-base font-normal text-slate-400">/{KUOTA_MAKS}</span>
+                  </p>
+                  <div className="mt-2 h-2 overflow-hidden rounded bg-slate-100">
+                    <div className={`h-full ${w.bar} anim-bar`}
+                      style={{ width: `${Math.min(Number(k.persen_terisi), 100)}%` }} />
+                  </div>
+                  <p className="mt-1.5 text-xs text-slate-400">sisa {k.kuota_tersisa} slot · ▼ lihat peserta</p>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* ===== Modal peserta per bulan ===== */}
       <Modal open={!!bulanBuka} onClose={() => setBulanBuka(null)}

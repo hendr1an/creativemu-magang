@@ -15,12 +15,9 @@ export function useNotifications() {
       supabase.from('notifications')
         .select('id, judul, pesan, read_at, created_at')
         .eq('user_id', user.id).eq('channel', 'in_app')
-        .order('created_at', { ascending: false }).limit(30),
+        .order('created_at', { ascending: false }).limit(50),
     ]);
     setUnread(count ?? 0);
-        // judul tab dinamis: (3) Creativemu — ...
-    const judul = 'Creativemu — Sistem Manajemen Magang';
-    document.title = (count ?? 0) > 0 ? `(${count}) ${judul}` : judul;
     setNotifs(data ?? []);
   }, [user]);
 
@@ -28,19 +25,17 @@ export function useNotifications() {
     if (!user) return;
     muat();
 
-    // ⚡ realtime: notifikasi baru muncul seketika
     const channel = supabase
       .channel('notifikasi-saya')
       .on('postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
         (payload) => {
-          if (payload.new?.channel !== 'in_app') return; // abaikan duplikat WA/email
-          setNotifs((n) => [payload.new, ...n].slice(0, 30));
+          if (payload.new?.channel !== 'in_app') return;
+          setNotifs((n) => [payload.new, ...n].slice(0, 50));
           setUnread((u) => u + 1);
         })
       .subscribe();
 
-    // 🛡️ fallback polling (kalau realtime kena jaringan)
     const iv = setInterval(muat, 60000);
 
     return () => { supabase.removeChannel(channel); clearInterval(iv); };
@@ -61,5 +56,17 @@ export function useNotifications() {
       .eq('user_id', user.id).eq('channel', 'in_app').is('read_at', null);
   }
 
-  return { notifs, unread, muat, tandaiBaca, tandaiSemuaBaca };
+  async function hapus(id) {
+    setNotifs((n) => n.filter((x) => x.id !== id));
+    await supabase.from('notifications').delete().eq('id', id);
+  }
+
+  async function hapusSemuaDibaca() {
+    setNotifs((n) => n.filter((x) => !x.read_at));
+    await supabase.from('notifications')
+      .delete()
+      .eq('user_id', user.id).eq('channel', 'in_app').not('read_at', 'is', null);
+  }
+
+  return { notifs, unread, muat, tandaiBaca, tandaiSemuaBaca, hapus, hapusSemuaDibaca };
 }

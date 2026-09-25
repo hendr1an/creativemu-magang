@@ -203,20 +203,20 @@ export default function Groups() {
 
               {/* tambah anggota */}
               {tanpaKelompok.length > 0 && (
-                <div className="mt-4 flex gap-2 pl-3">
+                <div className="mt-4 flex flex-col gap-2 pl-3 sm:flex-row">
                   <select value={pilihIntern[g.id] ?? ''}
                     onChange={(e) => setPilihIntern((s) => ({ ...s, [g.id]: e.target.value }))}
-                    className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium focus:border-indigo-500 focus:outline-none">
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-medium focus:border-indigo-500 focus:outline-none">
                     <option value="">+ Masukkan peserta ke kelompok ini…</option>
                     {tanpaKelompok.map((t) => (
                       <option key={t.id} value={t.id}>
-                        {t.nama_lengkap} ({t.email})
-                        {!sudahMulai(t) ? ` — ⚠ belum mulai` : ''}
+                        {t.nama_lengkap} — {t.email}
+                        {!sudahMulai(t) ? ' (belum mulai)' : ''}
                       </option>
                     ))}
                   </select>
                   <button onClick={() => mintaMasukkan(g.id, pilihIntern[g.id])}
-                    className="btn-press shrink-0 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-indigo-500/25 hover:bg-indigo-700">
+                    className="btn-press w-full shrink-0 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-indigo-500/25 hover:bg-indigo-700 sm:w-auto">
                     Masukkan
                   </button>
                 </div>

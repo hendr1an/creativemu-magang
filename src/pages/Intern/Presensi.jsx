@@ -121,17 +121,20 @@ export default function Presensi() {
     setBusy(true);
     try {
       const { pos, jarak } = await validasiLokasi();
-      const telat = jamSekarangWib() >= 8 && new Date().getMinutes() > 5;
-      const { error } = await supabase.from('attendance').insert({
-        intern_id: intern.id,
-        tanggal_presensi: HARI_INI,
-        check_in: new Date().toISOString(),
-        status_kehadiran: 'Hadir',
-        latitude: pos.lat,
-        longitude: pos.lng,
-      });
-      if (error) throw new Error(error.message);
-      setInfo(`✅ Check-in tercatat${jarak !== null ? ` — jarak ${Math.round(jarak)} m` : ''}${telat ? ' · ⚠️ tercatat TERLAMBAT' : ''}.`);
+            // ⭐ Cek dulu apakah izin Telat/WFH approved untuk hari ini
+      const { data: izinTelatHariIni } = await supabase
+        .from('leave_requests')
+        .select('id')
+        .eq('intern_id', intern.id)
+        .eq('jenis_izin', 'Terlambat')
+        .eq('status_izin', 'Approved')
+        .lte('tanggal_mulai', HARI_INI)
+        .gte('tanggal_selesai', HARI_INI)
+        .maybeSingle();
+
+      const telat = !izinTelatHariIni && jamSekarangWib() >= 8 && new Date().getMinutes() > 5;
+
+      setInfo(`✅ Check-in tercatat${jarak !== null ? ` — jarak ${Math.round(jarak)} m` : ''}${telat ? ' · ⚠️ kamu tercatat TERLAMBAT (lewat 08:05)' : ''}${izinTelatHariIni ? ' · ⏰ Izin Telat aktif — tanpa penalti' : ''}.`);
       await muat();
     } catch (e) { setError(e.message); }
     finally { setBusy(false); }
@@ -262,6 +265,26 @@ export default function Presensi() {
             <p className="relative mt-2.5 text-xl font-extrabold leading-snug sm:text-2xl">
               Sedang bekerja sejak {jamWib(hariIni.check_in)} 💪
             </p>
+                        {/* ⭐ Info izin WFH/Telat aktif hari ini */}
+            {(() => {
+              const wfh = izinList.find((l) =>
+                l.jenis_izin === 'WFH' && l.status_izin === 'Approved' &&
+                HARI_INI >= l.tanggal_mulai && HARI_INI <= l.tanggal_selesai);
+              const telat = izinList.find((l) =>
+                l.jenis_izin === 'Terlambat' && l.status_izin === 'Approved' &&
+                HARI_INI >= l.tanggal_mulai && HARI_INI <= l.tanggal_selesai);
+              if (wfh) return (
+                <p className="relative mt-2 inline-block rounded-xl bg-green-400/25 px-3 py-1.5 text-xs font-bold text-green-100">
+                  🏠 WFH Aktif — presensi dari mana saja
+                </p>
+              );
+              if (telat) return (
+                <p className="relative mt-2 inline-block rounded-xl bg-orange-400/25 px-3 py-1.5 text-xs font-bold text-orange-100">
+                  ⏰ Izin Telat — check-in tanpa penalti keterlambatan
+                </p>
+              );
+              return null;
+            })()}
             {hariIni.menit_terlambat != null && (
               <p className="relative mt-1 inline-block rounded-lg bg-orange-500/30 px-2.5 py-1 text-xs font-bold text-orange-200">
                 ⚠ terlambat {hariIni.menit_terlambat} menit

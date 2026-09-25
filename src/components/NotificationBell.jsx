@@ -27,7 +27,8 @@ function ruteUntuk(judul, role) {
     if (j.includes('penilaian akhir')) return '/intern/sertifikat';
   }
   if (role === 'mentor') {
-    if (j.includes('review') || j.includes('anggota baru')) return '/mentor/kelompok';
+    if (j.includes('review')) return '/mentor/kelompok?panel=review';
+    if (j.includes('anggota baru')) return '/mentor/kelompok';
   }
   if (role === 'admin') {
     if (j.includes('pengajuan magang baru')) return '/admin/pengajuan';

@@ -137,8 +137,22 @@ export default function Presensi() {
     finally { setBusy(false); }
   }
 
-  async function checkOut() {
+    async function checkOut() {
     setError(null); setInfo(null);
+
+    // ===== #12: CEK LOGBOOK DULU — wajib isi sebelum checkout =====
+    const { data: logbookHariIni } = await supabase
+      .from('logbook')
+      .select('id')
+      .eq('intern_id', intern.id)
+      .eq('tanggal', HARI_INI)
+      .maybeSingle();
+
+    if (!logbookHariIni) {
+      setError('📖 Isi logbook hari ini dulu sebelum check-out! Klik menu Logbook untuk menulis catatan kerjamu.');
+      return;
+    }
+
     const bolehAwal = pulangAwal?.status === 'Approved';
     if (jamSekarangWib() < JAM_BUKA_CHECKOUT && !bolehAwal)
       return setError('⏰ Check-out baru dibuka 17:00 WIB — atau ajukan Pulang Awal ke admin.');

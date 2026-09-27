@@ -5,7 +5,14 @@ import { fmtTanggal } from '../../lib/format';
 import Modal from '../../components/Modal';
 import { CountUp } from '../../components/Skeleton';
 
-const HARI_INI = new Date().toISOString().slice(0, 10);
+const tanggalWib = () =>
+  new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jakarta',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+
 const JAM_BUKA_CHECKIN = 8;
 const JAM_BUKA_CHECKOUT = 17;
 
@@ -16,10 +23,10 @@ const BADGE = {
   Alpha: 'bg-red-500',
 };
 const KOTAK = [
-  { key: 'Hadir', ikon: '✅', warna: 'bg-green-50 hover:bg-green-100 border-green-200', teks: 'text-green-700' },
-  { key: 'Izin', ikon: '📝', warna: 'bg-blue-50 hover:bg-blue-100 border-blue-200', teks: 'text-blue-700' },
-  { key: 'Sakit', ikon: '🤒', warna: 'bg-amber-50 hover:bg-amber-100 border-amber-200', teks: 'text-amber-700' },
-  { key: 'Alpha', ikon: '❌', warna: 'bg-red-50 hover:bg-red-100 border-red-200', teks: 'text-red-600' },
+  { key: 'Hadir', ikon: '✅', warna: 'bg-green-50 hover:bg-green-100 border-green-200' },
+  { key: 'Izin', ikon: '📝', warna: 'bg-blue-50 hover:bg-blue-100 border-blue-200' },
+  { key: 'Sakit', ikon: '🤒', warna: 'bg-amber-50 hover:bg-amber-100 border-amber-200' },
+  { key: 'Alpha', ikon: '❌', warna: 'bg-red-50 hover:bg-red-100 border-red-200' },
 ];
 
 const jamWib = (iso) => new Date(iso).toLocaleTimeString('id-ID',
@@ -59,6 +66,7 @@ function ambilLokasi() {
 }
 
 export default function Presensi() {
+  const HARI_INI = tanggalWib();
   const { intern, loading } = useIntern();
   const [hariIni, setHariIni] = useState(null);
   const [stats, setStats] = useState(null);
@@ -98,8 +106,15 @@ export default function Presensi() {
     setIzinList(lz.data ?? []);
   }
 
+  // ⭐ Helper — cek izin Telat/WFH approved untuk tanggal tertentu (dipakai di UI)
+  const izinTelatAktif = (tanggal) =>
+    izinList.some((l) => l.jenis_izin === 'Terlambat' && tanggal >= l.tanggal_mulai && tanggal <= l.tanggal_selesai);
+  const izinWFHAktif = (tanggal) =>
+    izinList.some((l) => l.jenis_izin === 'WFH' && tanggal >= l.tanggal_mulai && tanggal <= l.tanggal_selesai);
+
   const alasanIzinDi = (tanggal) => {
-    const z = izinList.find((l) => tanggal >= l.tanggal_mulai && tanggal <= l.tanggal_selesai);
+    const z = izinList.find((l) => l.jenis_izin !== 'Terlambat' && l.jenis_izin !== 'WFH'
+      && tanggal >= l.tanggal_mulai && tanggal <= l.tanggal_selesai);
     return z ? `${z.jenis_izin}: ${z.alasan}` : null;
   };
 
@@ -115,66 +130,154 @@ export default function Presensi() {
   }
 
   async function checkIn() {
-    setError(null); setInfo(null);
-    if (jamSekarangWib() < JAM_BUKA_CHECKIN)
-      return setError('⏰ Check-in baru dibuka pukul 08:00 WIB.');
-    setBusy(true);
-    try {
-      const { pos, jarak } = await validasiLokasi();
-            // ⭐ Cek dulu apakah izin Telat/WFH approved untuk hari ini
-      const { data: izinTelatHariIni } = await supabase
-        .from('leave_requests')
-        .select('id')
-        .eq('intern_id', intern.id)
-        .eq('jenis_izin', 'Terlambat')
-        .eq('status_izin', 'Approved')
-        .lte('tanggal_mulai', HARI_INI)
-        .gte('tanggal_selesai', HARI_INI)
-        .maybeSingle();
+  setError(null);
+  setInfo(null);
 
-      const telat = !izinTelatHariIni && jamSekarangWib() >= 8 && new Date().getMinutes() > 5;
-
-      setInfo(`✅ Check-in tercatat${jarak !== null ? ` — jarak ${Math.round(jarak)} m` : ''}${telat ? ' · ⚠️ kamu tercatat TERLAMBAT (lewat 08:05)' : ''}${izinTelatHariIni ? ' · ⏰ Izin Telat aktif — tanpa penalti' : ''}.`);
-      await muat();
-    } catch (e) { setError(e.message); }
-    finally { setBusy(false); }
+  if (jamSekarangWib() < JAM_BUKA_CHECKIN) {
+    return setError('⏰ Check-in baru dibuka pukul 08:00 WIB.');
   }
 
-    async function checkOut() {
-    setError(null); setInfo(null);
+  setBusy(true);
 
-    // ===== #12: CEK LOGBOOK DULU — wajib isi sebelum checkout =====
-    const { data: logbookHariIni } = await supabase
-      .from('logbook')
-      .select('id')
-      .eq('intern_id', intern.id)
-      .eq('tanggal', HARI_INI)
-      .maybeSingle();
+  try {
+    const wfh = izinList.some(
+      (l) =>
+        l.jenis_izin === 'WFH' &&
+        l.status_izin === 'Approved' &&
+        HARI_INI >= l.tanggal_mulai &&
+        HARI_INI <= l.tanggal_selesai
+    );
 
-    if (!logbookHariIni) {
-      setError('📖 Isi logbook hari ini dulu sebelum check-out! Klik menu Logbook untuk menulis catatan kerjamu.');
-      return;
+    const izinTelat = izinList.some(
+      (l) =>
+        l.jenis_izin === 'Terlambat' &&
+        l.status_izin === 'Approved' &&
+        HARI_INI >= l.tanggal_mulai &&
+        HARI_INI <= l.tanggal_selesai
+    );
+
+    let pos = null;
+    let jarak = null;
+
+    // Normal / izin terlambat tetap wajib berada di kantor.
+    // WFH tidak perlu mengambil GPS.
+    if (!wfh) {
+      const hasilLokasi = await validasiLokasi();
+      pos = hasilLokasi.pos;
+      jarak = hasilLokasi.jarak;
     }
 
-    const bolehAwal = pulangAwal?.status === 'Approved';
-    if (jamSekarangWib() < JAM_BUKA_CHECKOUT && !bolehAwal)
-      return setError('⏰ Check-out baru dibuka 17:00 WIB — atau ajukan Pulang Awal ke admin.');
-    setBusy(true);
-    try {
-      const { pos, jarak } = await validasiLokasi();
-      const { error } = await supabase.from('attendance')
-        .update({
-          check_out: new Date().toISOString(),
-          checkout_latitude: pos.lat,
-          checkout_longitude: pos.lng,
-        })
-        .eq('id', hariIni.id);
-      if (error) throw new Error(error.message);
-      setInfo(`🏁 Check-out tercatat${bolehAwal && jamSekarangWib() < 17 ? ' (Pulang Awal — disetujui admin)' : ''}${jarak !== null ? ` — jarak ${Math.round(jarak)} m` : ''}.`);
-      await muat();
-    } catch (e) { setError(e.message); }
-    finally { setBusy(false); }
+    const { error: insertError } = await supabase
+      .from('attendance')
+      .insert({
+        intern_id: intern.id,
+        tanggal_presensi: HARI_INI,
+        check_in: new Date().toISOString(),
+        status_kehadiran: 'Hadir',
+        latitude: pos?.lat ?? null,
+        longitude: pos?.lng ?? null,
+      });
+
+    if (insertError) {
+      throw new Error(insertError.message);
+    }
+
+    await muat();
+
+    if (wfh) {
+      setInfo('✅ Check-in WFH tercatat — presensi dari luar kantor diizinkan.');
+    } else if (izinTelat) {
+      setInfo(
+        `✅ Check-in tercatat${
+          jarak !== null ? ` — jarak ${Math.round(jarak)} m` : ''
+        } · ⏰ Izin Telat aktif — tanpa penalti.`
+      );
+    } else {
+      setInfo(
+        `✅ Check-in tercatat${
+          jarak !== null ? ` — jarak ${Math.round(jarak)} m` : ''
+        }.`
+      );
+    }
+  } catch (e) {
+    console.error('Presensi check-in gagal:', e);
+    setError(e.message);
+  } finally {
+    setBusy(false);
   }
+}
+
+  async function checkOut() {
+  setError(null);
+  setInfo(null);
+
+  // #12: Logbook wajib sebelum checkout
+  const { data: logbookHariIni } = await supabase
+    .from('logbook')
+    .select('id')
+    .eq('intern_id', intern.id)
+    .eq('tanggal', HARI_INI)
+    .maybeSingle();
+
+  if (!logbookHariIni) {
+    setError(
+      '📖 Isi logbook hari ini dulu sebelum check-out! Klik menu Logbook untuk menulis catatan kerjamu.'
+    );
+    return;
+  }
+
+  const bolehAwal = pulangAwal?.status === 'Approved';
+  const wfh = izinWFHAktif(HARI_INI);
+
+  if (jamSekarangWib() < JAM_BUKA_CHECKOUT && !bolehAwal && !wfh) {
+    return setError(
+      '⏰ Check-out baru dibuka 17:00 WIB — atau ajukan Pulang Awal / WFH.'
+    );
+  }
+
+  setBusy(true);
+
+  try {
+    let pos = null;
+    let jarak = null;
+
+    // Normal & pulang awal tetap wajib GPS kantor.
+    // WFH tidak perlu GPS.
+    if (!wfh) {
+      const hasilLokasi = await validasiLokasi();
+      pos = hasilLokasi.pos;
+      jarak = hasilLokasi.jarak;
+    }
+
+    const { error } = await supabase
+      .from('attendance')
+      .update({
+        check_out: new Date().toISOString(),
+        checkout_latitude: pos?.lat ?? null,
+        checkout_longitude: pos?.lng ?? null,
+      })
+      .eq('id', hariIni.id);
+
+    if (error) throw new Error(error.message);
+
+    await muat();
+
+    setInfo(
+      `🏁 Check-out tercatat${
+        bolehAwal && jamSekarangWib() < 17
+          ? ' (Pulang Awal)'
+          : wfh
+            ? ' (WFH)'
+            : ''
+      }${jarak !== null ? ` — jarak ${Math.round(jarak)} m` : ''}.`
+    );
+  } catch (e) {
+    console.error('Presensi check-out gagal:', e);
+    setError(e.message);
+  } finally {
+    setBusy(false);
+  }
+}
 
   async function ajukanPulangAwal(e) {
     e.preventDefault();
@@ -203,11 +306,13 @@ export default function Presensi() {
     </div>
   );
 
-  const belumMulai = intern && intern.tanggal_mulai > HARI_INI;
-  const masaSelesai = intern && intern.tanggal_selesai <= HARI_INI;
+  const belumMulai = intern.tanggal_mulai > HARI_INI;
+  const masaSelesai = intern.tanggal_selesai <= HARI_INI;
   const persen = stats?.persen_kehadiran;
   const persenTampil = persen === null || persen === undefined;
   const bolehAwal = pulangAwal?.status === 'Approved';
+  const wfh = izinWFHAktif(HARI_INI);
+  const telatIzin = izinTelatAktif(HARI_INI);
   const sudahJam5 = jamSekarangWib() >= JAM_BUKA_CHECKOUT;
 
   if (belumMulai) {
@@ -216,12 +321,11 @@ export default function Presensi() {
         <div className="anim-up">
           <h1 className="text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">Presensi</h1>
         </div>
-        <div className="anim-up mt-6 flex flex-col items-center rounded-2xl border-2 border-dashed border-slate-300 bg-white p-10 text-center sm:p-12">
+        <div className="anim-up mt-6 flex flex-col items-center rounded-2xl border-2 border-dashed border-slate-300 bg-white p-10 text-center shadow sm:p-12">
           <p className="anim-float text-5xl">🔒</p>
-          <p className="mt-4 text-lg font-bold text-slate-700">Presensi Belum Tersedia</p>
-          <p className="mt-2 text-sm leading-relaxed text-slate-500">
-            Masa magangmu dimulai pada <b>{fmtTanggal(intern.tanggal_mulai)}</b>.<br />
-            Halaman ini terbuka otomatis ketika masa magangmu berjalan.
+          <h2 className="mt-3 text-lg font-bold text-slate-700">Presensi Belum Tersedia</h2>
+          <p className="mt-2 text-sm text-slate-500">
+            Masa magangmu dimulai pada <b>{fmtTanggal(intern.tanggal_mulai)}</b>.
           </p>
         </div>
       </div>
@@ -239,8 +343,8 @@ export default function Presensi() {
       {error && <p className="anim-down mt-4 rounded-xl bg-red-50 p-3 text-sm font-medium leading-relaxed text-red-600">{error}</p>}
       {info && <p className="anim-down mt-4 rounded-xl bg-green-50 p-3 text-sm font-medium leading-relaxed text-green-700">{info}</p>}
 
-      {/* ===== kartu hari ini ===== */}
-      <div className="anim-up relative mt-5 overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-600 to-purple-700 p-5 text-white shadow-xl [animation-delay:80ms]">
+      {/* ===== Kartu hari ini ===== */}
+      <div className="anim-up relative mt-5 overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-600 to-purple-700 p-5 text-white shadow-xl">
         <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10" />
 
         <p className="relative text-[10px] font-bold uppercase tracking-[0.25em] text-indigo-200">
@@ -256,46 +360,35 @@ export default function Presensi() {
               Check-in 08:00 · toleransi 08:05 · {kantor ? `radius ${kantor.radius_meter} m` : 'radius kantor'}
             </p>
             <button onClick={checkIn} disabled={busy || jamSekarangWib() < JAM_BUKA_CHECKIN}
-              className="btn-press anim-pulse-ring relative mt-4 w-full rounded-xl bg-white py-4 text-base font-extrabold text-indigo-700 shadow-lg transition hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-50 sm:w-64">
+              className="btn-press anim-pulse-ring relative mt-4 w-full rounded-xl bg-white py-4 text-base font-extrabold text-indigo-700 shadow-lg transition hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-40 sm:w-64">
               {jamSekarangWib() < JAM_BUKA_CHECKIN ? '🔒 Dibuka pukul 08:00' : busy ? 'Memproses…' : '✅ CHECK-IN SEKARANG'}
             </button>
           </>
         ) : !hariIni.check_out ? (
           <>
-            <p className="relative mt-2.5 text-xl font-extrabold leading-snug sm:text-2xl">
+            <p className="relative mt-2.5 text-xl font-extrabold sm:text-2xl">
               Sedang bekerja sejak {jamWib(hariIni.check_in)} 💪
             </p>
-                        {/* ⭐ Info izin WFH/Telat aktif hari ini */}
-            {(() => {
-              const wfh = izinList.find((l) =>
-                l.jenis_izin === 'WFH' && l.status_izin === 'Approved' &&
-                HARI_INI >= l.tanggal_mulai && HARI_INI <= l.tanggal_selesai);
-              const telat = izinList.find((l) =>
-                l.jenis_izin === 'Terlambat' && l.status_izin === 'Approved' &&
-                HARI_INI >= l.tanggal_mulai && HARI_INI <= l.tanggal_selesai);
-              if (wfh) return (
-                <p className="relative mt-2 inline-block rounded-xl bg-green-400/25 px-3 py-1.5 text-xs font-bold text-green-100">
-                  🏠 WFH Aktif — presensi dari mana saja
-                </p>
-              );
-              if (telat) return (
-                <p className="relative mt-2 inline-block rounded-xl bg-orange-400/25 px-3 py-1.5 text-xs font-bold text-orange-100">
-                  ⏰ Izin Telat — check-in tanpa penalti keterlambatan
-                </p>
-              );
-              return null;
-            })()}
+
+            {/* ⭐ Badge izin aktif */}
+            {wfh && (
+              <p className="relative mt-2 inline-block rounded-xl bg-green-400/30 px-3 py-1.5 text-xs font-bold text-green-100">
+                🏠 WFH Aktif — presensi dari mana saja
+              </p>
+            )}
+            {telatIzin && (
+              <p className="relative mt-2 inline-block rounded-xl bg-orange-400/30 px-3 py-1.5 text-xs font-bold text-orange-100">
+                ⏰ Izin Telat — tanpa penalti keterlambatan
+              </p>
+            )}
             {hariIni.menit_terlambat != null && (
-              <p className="relative mt-1 inline-block rounded-lg bg-orange-500/30 px-2.5 py-1 text-xs font-bold text-orange-200">
+              <p className="relative mt-2 inline-block rounded-xl bg-orange-500/30 px-2.5 py-1 text-xs font-bold text-orange-200">
                 ⚠ terlambat {hariIni.menit_terlambat} menit
               </p>
             )}
-            <p className="relative mt-1 text-[11px] font-medium text-indigo-200">
-              Check-out dibuka 17:00{bolehAwal && ' — pulang awalmu DISETUJUI!'}
-            </p>
 
             {pulangAwal && pulangAwal.status !== 'Approved' && (
-              <p className={`relative mt-3 rounded-xl px-3 py-2 text-[11px] font-bold ${
+              <p className={`relative mt-2 rounded-xl px-3 py-2 text-[11px] font-bold ${
                 pulangAwal.status === 'Pending' ? 'bg-amber-400/25 text-amber-100' : 'bg-red-400/25 text-red-100'}`}>
                 {pulangAwal.status === 'Pending' && '⏳ Pengajuan pulang awal menunggu konfirmasi admin.'}
                 {pulangAwal.status === 'Rejected' && '❌ Pulang awal ditolak — check-out tetap 17:00.'}
@@ -304,13 +397,14 @@ export default function Presensi() {
 
             <div className="relative mt-4 flex flex-col gap-2 sm:flex-row">
               <button onClick={checkOut}
-                disabled={busy || (!sudahJam5 && !bolehAwal)}
-                className="btn-press w-full rounded-xl bg-white py-4 text-base font-extrabold text-orange-600 shadow-lg transition hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:px-8">
+                disabled={busy || (!sudahJam5 && !bolehAwal && !wfh)}
+                className="btn-press w-full rounded-xl bg-white py-4 text-base font-extrabold text-orange-600 shadow-lg transition hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:px-8">
                 {busy ? 'Memproses…'
                   : bolehAwal && !sudahJam5 ? '🏁 CHECK-OUT (PULANG AWAL)'
+                  : wfh && !sudahJam5 ? '🏁 CHECK-OUT'
                   : sudahJam5 ? '🏁 CHECK-OUT' : '🔒 Dibuka 17:00'}
               </button>
-              {!pulangAwal && !sudahJam5 && (
+              {!pulangAwal && !sudahJam5 && !wfh && (
                 <button onClick={() => setModalAwal(true)}
                   className="btn-press w-full rounded-xl border-2 border-white/40 py-4 text-sm font-bold text-white transition hover:bg-white/10 sm:w-auto sm:px-6">
                   🏃 Pulang Awal
@@ -339,7 +433,7 @@ export default function Presensi() {
         )}
       </div>
 
-      {/* ===== statistik ===== */}
+      {/* ===== Statistik ===== */}
       {stats && !stats.error && (
         persenTampil ? (
           <div className="anim-up mt-5 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
@@ -348,7 +442,7 @@ export default function Presensi() {
             </p>
           </div>
         ) : (
-          <div className="anim-up mt-5 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm [animation-delay:160ms]">
+          <div className="anim-up mt-5 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
             <div className="flex flex-wrap items-end justify-between gap-2">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Persentase Kehadiran</p>
@@ -356,10 +450,8 @@ export default function Presensi() {
                   <CountUp value={persen} suffix="%" />
                 </p>
               </div>
-              <span className={`rounded-full px-3 py-1 text-[10px] font-extrabold ${
-                persen >= 85 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
-                {stats.status}
-              </span>
+              <span className={`rounded-full px-3 py-1 text-xs font-bold ${
+                persen >= 85 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>{stats.status}</span>
             </div>
             <div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-100">
               <div className={`anim-bar h-full rounded-full ${persen >= 85 ? 'bg-green-500' : 'bg-red-400'}`}
@@ -369,7 +461,6 @@ export default function Presensi() {
               Target {stats.target_persen}% — toleransi {stats.toleransi_hari ?? 0} hari
             </p>
 
-            {/* kotak expandable */}
             <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
               {KOTAK.map((k, i) => {
                 const aktif = bukaKotak === k.key;
@@ -379,7 +470,7 @@ export default function Presensi() {
                       aktif ? 'ring-2 ring-offset-1 ring-slate-800' : ''}`}
                     style={{ animationDelay: `${200 + i * 60}ms` }}>
                     <p className="text-xl">{k.ikon}</p>
-                    <b className={`text-lg ${k.teks}`}>
+                    <b className="text-lg">
                       <CountUp value={stats[k.key.toLowerCase()] ?? 0} />
                     </b>
                     <p className="text-[11px] font-semibold text-slate-500">{k.key}</p>
@@ -389,7 +480,6 @@ export default function Presensi() {
               })}
             </div>
 
-            {/* panel expand */}
             {bukaKotak && (
               <div className="anim-down mt-3 rounded-xl border border-slate-100 bg-slate-50 p-3 sm:p-4">
                 <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
@@ -427,7 +517,7 @@ export default function Presensi() {
             )}
 
             {Number(stats.terlambat ?? 0) > 0 && (
-              <p className="mt-3 text-center text-[11px] font-bold text-orange-500">
+              <p className="mt-3 text-center text-xs font-bold text-orange-500">
                 ⚠️ Terlambat {stats.terlambat}× · rata-rata {stats.rata_menit_terlambat ?? 0} menit
               </p>
             )}
@@ -435,12 +525,12 @@ export default function Presensi() {
         )
       )}
 
-      {/* ===== riwayat 15 hari ===== */}
-      <h2 className="anim-up mt-8 text-base font-bold text-slate-800 [animation-delay:300ms]">🕘 Riwayat 15 Hari Terakhir</h2>
-      <div className="anim-up mt-3 overflow-x-auto rounded-2xl border border-slate-100 bg-white shadow-sm [-webkit-overflow-scrolling:touch] [animation-delay:300ms]">
+      {/* ===== Riwayat ===== */}
+      <h2 className="anim-up mt-8 text-base font-bold text-slate-800">🕘 Riwayat 15 Hari Terakhir</h2>
+      <div className="anim-up mt-3 overflow-x-auto rounded-2xl border border-slate-100 bg-white shadow-sm">
         <table className="w-full min-w-[420px] text-sm">
           <thead>
-            <tr className="border-b border-slate-100 bg-slate-50/70 text-left text-[10px] uppercase tracking-wider text-slate-400">
+            <tr className="border-b border-slate-100 bg-slate-50 text-left text-[10px] uppercase tracking-wider text-slate-400">
               <th className="px-3 py-2.5 sm:px-4">Tanggal</th>
               <th className="px-3 py-2.5 sm:px-4">Masuk</th>
               <th className="px-3 py-2.5 sm:px-4">Keluar</th>
@@ -455,8 +545,8 @@ export default function Presensi() {
                   <p className="mt-2 text-sm text-slate-400">Belum ada riwayat</p>
                 </div>
               </td></tr>
-            ) : riwayat.slice(0, 15).map((r, i) => (
-              <tr key={r.id} className="anim-in border-b border-slate-50" style={{ animationDelay: `${i * 40}ms` }}>
+            ) : riwayat.slice(0, 15).map((r) => (
+              <tr key={r.id} className="anim-in border-b border-slate-50">
                 <td className="px-3 py-2.5 font-bold text-slate-600 sm:px-4">{fmtTanggal(r.tanggal_presensi)}</td>
                 <td className="whitespace-nowrap px-3 py-2.5 sm:px-4">
                   {r.check_in ? jamWib(r.check_in) : '—'}
@@ -476,7 +566,7 @@ export default function Presensi() {
         </table>
       </div>
 
-      {/* ===== modal pulang awal ===== */}
+      {/* ===== Modal Pulang Awal ===== */}
       <Modal open={modalAwal} onClose={() => setModalAwal(false)} title="🏃 Ajukan Pulang Awal">
         <form onSubmit={ajukanPulangAwal}>
           <p className="text-sm leading-relaxed text-slate-600">

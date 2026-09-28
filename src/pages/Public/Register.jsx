@@ -3,14 +3,27 @@ import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 
 const MAX_QUOTA = 20;
-const HARI_INI = new Date().toISOString().slice(0, 10);
+const HARI_INI = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Asia/Jakarta',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+}).format(new Date());
 
 export default function Register() {
   const [form, setForm] = useState({
-    nama_lengkap: '', email: '', nomor_whatsapp: '', instansi: '',
-    portofolio_url: '', tanggal_mulai: '', durasi_magang: 1, satuan: 'bulan',
-    tanggal_selesai_custom: '',
-  });
+  nama_lengkap: '',
+  email: '',
+  nomor_whatsapp: '',
+  instansi: '',
+  divisi: '',
+  portofolio_url: '',
+  tanggal_mulai: '',
+  durasi_magang: 1,
+  satuan: 'bulan',
+  tanggal_selesai_custom: '',
+});
+
   const [cvFile, setCvFile] = useState(null);
   const [quota, setQuota] = useState(null);
   const [quotaLoading, setQuotaLoading] = useState(false);
@@ -19,25 +32,53 @@ export default function Register() {
   const [sukses, setSukses] = useState(false);
 
   useEffect(() => {
-    if (!form.tanggal_mulai) { setQuota(null); return; }
-    let aktif = true;
+  if (!form.tanggal_mulai || !form.divisi) {
+    setQuota(null);
+    return;
+  }
+
+  let aktif = true;
+
+  async function cekQuota() {
     setQuotaLoading(true);
-    supabase.functions
-      .invoke('check-quota', {
-        body: {
-          tanggal_mulai: form.tanggal_mulai,
-          durasi: Number(form.durasi_magang),
-          satuan: form.satuan,
-          tanggal_selesai: form.tanggal_selesai_custom || undefined,
-        },
-      })
-      .then(({ data, error }) => {
-        if (!aktif) return;
-        setQuotaLoading(false);
-        setQuota(error ? { error: true } : data);
+
+    const { data: cek, error: cekErr } = await supabase.functions.invoke('check-quota', {
+  body: {
+    tanggal_mulai: form.tanggal_mulai,
+    durasi: Number(form.durasi_magang),
+    satuan: form.satuan,
+    tanggal_selesai: form.tanggal_selesai_custom || undefined,
+    divisi: form.divisi,
+  },
+});
+
+    if (!aktif) return;
+
+    setQuotaLoading(false);
+
+    if (cekErr) {
+      setQuota({
+        error: true,
+        message: 'Gagal memeriksa kuota.',
       });
-    return () => { aktif = false; };
-  }, [form.tanggal_mulai, form.durasi_magang, form.satuan, form.tanggal_selesai_custom]);
+      return;
+    }
+
+    setQuota(cek);
+  }
+
+  cekQuota();
+
+  return () => {
+    aktif = false;
+  };
+}, [
+  form.tanggal_mulai,
+  form.durasi_magang,
+  form.satuan,
+  form.tanggal_selesai_custom,
+  form.divisi,
+]);
 
   const update = (f, v) => setForm((s) => ({ ...s, [f]: v }));
 
@@ -67,14 +108,36 @@ export default function Register() {
           durasi: Number(form.durasi_magang),
           satuan: form.satuan,
           tanggal_selesai: form.tanggal_selesai_custom || undefined,
+          divisi: form.divisi,
         },
       });
       if (cekErr) throw new Error('Gagal memeriksa kuota. Periksa koneksi.');
       if (cek?.error) throw new Error(cek.message);
       if (!cek?.tersedia) {
-        const penuh = (cek.detail_bulan || []).filter((m) => m.penuh).map((m) => m.bulan);
-        throw new Error(`Kuota penuh pada: ${penuh.join(', ')}. Pilih tanggal lain.`);
-      }
+  const detail = cek?.detail_bulan || [];
+
+  if (cek?.tersedia_total === false) {
+    const bulanPenuh = detail
+      .filter((m) => m.total_penuh)
+      .map((m) => m.bulan);
+
+    throw new Error(
+      `Kuota total magang penuh pada ${bulanPenuh.join(', ')}. Pilih periode lain.`
+    );
+  }
+
+  if (cek?.tersedia_divisi === false) {
+    const bulanPenuh = detail
+      .filter((m) => m.divisi_penuh)
+      .map((m) => m.bulan);
+
+    throw new Error(
+      `Kuota divisi ${form.divisi} penuh pada ${bulanPenuh.join(', ')}. Silakan pilih divisi atau periode lain.`
+    );
+  }
+
+  throw new Error('Kuota magang untuk periode ini tidak tersedia.');
+}
 
       const ext = cvFile.name.split('.').pop().toLowerCase();
       const path = `applications/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
@@ -86,6 +149,7 @@ export default function Register() {
         email: form.email.trim().toLowerCase(),
         nomor_whatsapp: form.nomor_whatsapp.trim(),
         instansi: form.instansi.trim(),
+        divisi: form.divisi,
         portofolio_url: form.portofolio_url.trim() || null,
         cv_url: path,
         tanggal_mulai: form.tanggal_mulai,
@@ -194,6 +258,41 @@ export default function Register() {
             </div>
 
             <div>
+  <label className="text-sm font-medium text-slate-700">
+    Divisi yang Diminati
+  </label>
+
+  <select
+    required
+    value={form.divisi}
+    onChange={(e) => update('divisi', e.target.value)}
+    className="mt-1.5 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-[#9647FE] focus:ring-2 focus:ring-purple-200"
+  >
+    <option value="">Pilih divisi...</option>
+
+    <option value="Admin">
+      Admin — Administrasi & Operasional
+    </option>
+
+    <option value="Sosmed">
+      Sosmed — Social Media & Content
+    </option>
+
+    <option value="Marketplace">
+      Marketplace — E-commerce & Digital Marketing
+    </option>
+
+    <option value="Web Developer">
+      Web Developer — Website & Programming
+    </option>
+  </select>
+
+  <p className="mt-1.5 text-xs text-slate-400">
+    Pilih bidang yang paling sesuai dengan minat dan kemampuanmu.
+  </p>
+</div>
+
+            <div>
               <label className="text-sm font-medium text-slate-700">
                 Link Portofolio <span className="font-normal text-slate-400">(opsional)</span>
               </label>
@@ -278,27 +377,117 @@ export default function Register() {
               <p className="text-center text-xs text-slate-400">Memeriksa kuota...</p>
             )}
             {quota && !quota.error && quota.tersedia !== undefined && (
-              <div className={`rounded-lg border p-4 ${
-                quota.tersedia
-                  ? 'border-green-200 bg-green-50'
-                  : 'border-red-200 bg-red-50'}`}>
-                <p className={`text-sm font-medium ${quota.tersedia ? 'text-green-700' : 'text-red-600'}`}>
-                  {quota.tersedia ? 'Kuota tersedia' : 'Kuota penuh — pilih tanggal lain'}
-                </p>
-                <div className="mt-3 space-y-1.5">
-                  {quota.detail_bulan?.map((m) => (
-                    <div key={m.bulan} className="flex items-center gap-3">
-                      <span className="w-14 text-[11px] font-medium text-slate-500">{m.bulan}</span>
-                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-200">
-                        <div className={`h-full rounded-full ${m.penuh ? 'bg-red-400' : 'bg-green-400'}`}
-                          style={{ width: `${Math.min((m.terisi / MAX_QUOTA) * 100, 100)}%` }} />
-                      </div>
-                      <span className="w-10 text-right text-[11px] text-slate-400">{m.terisi}/{MAX_QUOTA}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+  <div
+    className={`rounded-xl border p-4 ${
+      quota.tersedia
+        ? 'border-green-200 bg-green-50'
+        : 'border-red-200 bg-red-50'
+    }`}
+  >
+    <p
+      className={`text-sm font-semibold ${
+        quota.tersedia
+          ? 'text-green-700'
+          : 'text-red-600'
+      }`}
+    >
+      {quota.tersedia
+        ? `Kuota ${form.divisi} tersedia`
+        : quota.tersedia_total === false
+          ? 'Kuota total magang penuh'
+          : `Kuota divisi ${form.divisi} penuh`}
+    </p>
+
+    <div className="mt-3 space-y-3">
+      {quota.detail_bulan?.map((m) => (
+        <div
+          key={m.bulan}
+          className="rounded-lg border border-slate-200 bg-white p-3"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-700">
+              {m.bulan}
+            </span>
+
+            <span className="text-[11px] text-slate-400">
+              {m.divisi}
+            </span>
+          </div>
+
+          <div className="mt-3">
+            <div className="flex justify-between text-[11px]">
+              <span className="text-slate-500">
+                Total peserta
+              </span>
+
+              <span
+                className={
+                  m.total_penuh
+                    ? 'font-semibold text-red-500'
+                    : 'text-slate-600'
+                }
+              >
+                {m.total_terisi}/{m.total_kuota}
+              </span>
+            </div>
+
+            <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-100">
+              <div
+                className={`h-full rounded-full ${
+                  m.total_penuh
+                    ? 'bg-red-400'
+                    : 'bg-green-400'
+                }`}
+                style={{
+                  width: `${Math.min(
+                    (m.total_terisi / m.total_kuota) * 100,
+                    100
+                  )}%`,
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="mt-3">
+            <div className="flex justify-between text-[11px]">
+              <span className="text-slate-500">
+                Divisi {m.divisi}
+              </span>
+
+              <span
+                className={
+                  m.divisi_penuh
+                    ? 'font-semibold text-red-500'
+                    : 'text-slate-600'
+                }
+              >
+                {m.divisi_terisi}/{m.divisi_kuota}
+              </span>
+            </div>
+
+            <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-100">
+              <div
+                className={`h-full rounded-full ${
+                  m.divisi_penuh
+                    ? 'bg-red-400'
+                    : 'bg-[#9647FE]'
+                }`}
+                style={{
+                  width: `${Math.min(
+                    m.divisi_kuota > 0
+                      ? (m.divisi_terisi / m.divisi_kuota) * 100
+                      : 100,
+                    100
+                  )}%`,
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
 
             <button type="submit"
               disabled={submitting || (quota && !quota.error && quota.tersedia === false)}

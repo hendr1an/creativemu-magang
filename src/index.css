@@ -1,156 +1,1803 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@layer base {
-  html { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; }
-  body { -webkit-font-smoothing: antialiased; letter-spacing: -0.011em; }
-  h1, h2, h3 { letter-spacing: -0.025em; }
-}
+
 
 /* ============================================================
-   🎨 CREATIVEMU — Animation & Polish Library (pure CSS)
+   CREATIVEMU — GLOBAL THEME TOKENS
    ============================================================ */
 
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes fadeInUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes fadeInDown { from { opacity: 0; transform: translateY(-16px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes popIn { 0% { opacity: 0; transform: scale(.85); } 70% { transform: scale(1.03); } 100% { opacity: 1; transform: scale(1); } }
-@keyframes slideInLeft { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: translateX(0); } }
-@keyframes slideInRight { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: translateX(0); } }
-@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
-@keyframes wiggle { 0%, 100% { transform: rotate(0); } 15% { transform: rotate(16deg); } 30% { transform: rotate(-8deg); } 45% { transform: rotate(14deg); } 60% { transform: rotate(-4deg); } 75% { transform: rotate(10deg); } }
-@keyframes shimmer { from { background-position: -400px 0; } to { background-position: 400px 0; } }
-@keyframes gradientMove { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-@keyframes pulseRing { 0% { box-shadow: 0 0 0 0 rgba(99,102,241,.4); } 70% { box-shadow: 0 0 0 14px rgba(99,102,241,0); } 100% { box-shadow: 0 0 0 0 rgba(99,102,241,0); } }
-@keyframes barGrow { from { width: 0; } }
-@keyframes spinSlow { to { transform: rotate(360deg); } }
-@keyframes bounceSoft { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+:root,
+html[data-theme='light'] {
+  --app-bg: #f1f5f9;
+
+  --surface: #ffffff;
+  --surface-soft: #f8fafc;
+  --surface-muted: #f1f5f9;
+  --surface-elevated: #ffffff;
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+
+  --border: #e2e8f0;
+  --border-strong: #cbd5e1;
+
+  --primary: #7c3aed;
+  --primary-hover: #6d28d9;
+  --accent: #6366f1;
+
+  --input-bg: #ffffff;
+
+  --overlay:
+    rgba(15, 23, 42, 0.55);
+
+  --shadow-soft:
+    0 12px 32px -18px
+    rgba(15, 23, 42, 0.22);
+
+  --scrollbar: #cbd5e1;
+  --scrollbar-hover: #94a3b8;
+
+  --success-surface: #ecfdf5;
+  --success-text: #047857;
+
+  --warning-surface: #fffbeb;
+  --warning-text: #b45309;
+
+  --danger-surface: #fef2f2;
+  --danger-text: #b91c1c;
+
+  --info-surface: #eef2ff;
+  --info-text: #4338ca;
+}
+
+
+/* ============================================================
+   DARK PALETTE
+   Tidak menggunakan #000000
+   ============================================================ */
+
+html[data-theme='dark'] {
+  --app-bg: #0f172a;
+
+  --surface: #111827;
+  --surface-soft: #172033;
+  --surface-muted: #1e293b;
+  --surface-elevated: #1e293b;
+
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+
+  --border: #334155;
+  --border-strong: #475569;
+
+  --primary: #a78bfa;
+  --primary-hover: #c4b5fd;
+  --accent: #818cf8;
+
+  --input-bg: #111827;
+
+  --overlay:
+    rgba(2, 6, 23, 0.72);
+
+  --shadow-soft:
+    0 18px 48px -24px
+    rgba(0, 0, 0, 0.65);
+
+  --scrollbar: #475569;
+  --scrollbar-hover: #64748b;
+
+  --success-surface: #052e24;
+  --success-text: #6ee7b7;
+
+  --warning-surface: #3b2507;
+  --warning-text: #fcd34d;
+
+  --danger-surface: #3b1015;
+  --danger-text: #fca5a5;
+
+  --info-surface: #1e1b4b;
+  --info-text: #c7d2fe;
+}
+
+
+/* ============================================================
+   BASE
+   ============================================================ */
+
+@layer base {
+
+  html {
+    font-family:
+      'Inter',
+      ui-sans-serif,
+      system-ui,
+      sans-serif;
+
+    background:
+      var(--app-bg);
+
+    color:
+      var(--text-primary);
+  }
+
+  body {
+    min-height: 100vh;
+
+    background:
+      var(--app-bg);
+
+    color:
+      var(--text-primary);
+
+    -webkit-font-smoothing:
+      antialiased;
+
+    letter-spacing:
+      -0.011em;
+  }
+
+  body,
+  button,
+  input,
+  textarea,
+  select,
+  option {
+    color-scheme: inherit;
+  }
+
+  input,
+  textarea,
+  select {
+    background-color:
+      var(--input-bg);
+
+    color:
+      var(--text-primary);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color:
+      var(--text-muted);
+  }
+
+  h1,
+  h2,
+  h3 {
+    letter-spacing:
+      -0.025em;
+  }
+
+  ::selection {
+    background:
+      rgba(
+        139,
+        92,
+        246,
+        0.28
+      );
+  }
+}
+
+
+/* ============================================================
+   FALLBACK SMOOTH TRANSITION
+   Untuk browser tanpa View Transitions API
+   ============================================================ */
+
+html.theme-transition *,
+html.theme-transition *::before,
+html.theme-transition *::after {
+  transition:
+    background-color
+      0.38s
+      ease-in-out,
+    border-color
+      0.38s
+      ease-in-out,
+    color
+      0.32s
+      ease-in-out,
+    fill
+      0.32s
+      ease-in-out,
+    stroke
+      0.32s
+      ease-in-out,
+    box-shadow
+      0.38s
+      ease-in-out
+    !important;
+}
+
+
+@media (
+  prefers-reduced-motion:
+  reduce
+) {
+
+  html.theme-transition *,
+  html.theme-transition *::before,
+  html.theme-transition *::after {
+    transition:
+      none
+      !important;
+  }
+}
+
+
+/* ============================================================
+   VIEW TRANSITIONS — CIRCULAR REVEAL
+   ============================================================ */
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation:
+    none;
+
+  mix-blend-mode:
+    normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index:
+    999999;
+}
+
+
+/* ============================================================
+   DARK MODE COMPATIBILITY
+   Existing Tailwind utilities project-wide
+   ============================================================ */
+
+html[data-theme='dark']
+body,
+
+html[data-theme='dark']
+#root,
+
+html[data-theme='dark']
+.bg-slate-100 {
+  background-color:
+    var(--app-bg)
+    !important;
+}
+
+
+/* WHITE CARDS */
+
+html[data-theme='dark']
+.bg-white {
+  background-color:
+    var(--surface)
+    !important;
+}
+
+
+/*
+  Khusus translucent white
+  yang memang dipakai sebagai surface,
+  bukan hover sidebar.
+*/
+
+html[data-theme='dark']
+[class~='bg-white/80'],
+
+html[data-theme='dark']
+[class~='bg-white/70'],
+
+html[data-theme='dark']
+[class~='bg-white/60'] {
+  background-color:
+    rgba(
+      17,
+      24,
+      39,
+      0.88
+    )
+    !important;
+}
+
+
+/* SLATE SURFACES */
+
+html[data-theme='dark']
+.bg-slate-50,
+
+html[data-theme='dark']
+[class~='bg-slate-50/50'],
+
+html[data-theme='dark']
+[class~='bg-slate-50/60'],
+
+html[data-theme='dark']
+[class~='bg-slate-50/70'] {
+  background-color:
+    var(--surface-soft)
+    !important;
+}
+
+
+html[data-theme='dark']
+.bg-slate-100 {
+  background-color:
+    var(--surface-muted)
+    !important;
+}
+
+
+/* TEXT */
+
+html[data-theme='dark']
+.text-slate-900,
+
+html[data-theme='dark']
+.text-slate-800,
+
+html[data-theme='dark']
+.text-slate-700 {
+  color:
+    var(--text-primary)
+    !important;
+}
+
+
+html[data-theme='dark']
+.text-slate-600,
+
+html[data-theme='dark']
+.text-slate-500 {
+  color:
+    var(--text-secondary)
+    !important;
+}
+
+
+html[data-theme='dark']
+.text-slate-400,
+
+html[data-theme='dark']
+.text-slate-300 {
+  color:
+    var(--text-muted)
+    !important;
+}
+
+
+/* BORDERS */
+
+html[data-theme='dark']
+.border-slate-50,
+
+html[data-theme='dark']
+.border-slate-100,
+
+html[data-theme='dark']
+.border-slate-200,
+
+html[data-theme='dark']
+.border-slate-300 {
+  border-color:
+    var(--border)
+    !important;
+}
+
+
+html[data-theme='dark']
+.ring-slate-100,
+
+html[data-theme='dark']
+.ring-slate-200 {
+  --tw-ring-color:
+    var(--border)
+    !important;
+}
+
+
+/* SHADOWS */
+
+html[data-theme='dark']
+.shadow,
+
+html[data-theme='dark']
+.shadow-sm,
+
+html[data-theme='dark']
+.shadow-md,
+
+html[data-theme='dark']
+.shadow-lg,
+
+html[data-theme='dark']
+.shadow-xl,
+
+html[data-theme='dark']
+.shadow-2xl {
+  box-shadow:
+    var(--shadow-soft)
+    !important;
+}
+
+
+/* ============================================================
+   SEMANTIC COLORS — DARK
+   ============================================================ */
+
+/* SUCCESS */
+
+html[data-theme='dark']
+.bg-green-50,
+
+html[data-theme='dark']
+.bg-emerald-50,
+
+html[data-theme='dark']
+[class~='bg-green-50/30'],
+
+html[data-theme='dark']
+[class~='bg-green-50/40'],
+
+html[data-theme='dark']
+[class~='bg-green-50/60'],
+
+html[data-theme='dark']
+[class~='bg-green-50/70'] {
+  background-color:
+    var(--success-surface)
+    !important;
+}
+
+
+html[data-theme='dark']
+.text-green-600,
+
+html[data-theme='dark']
+.text-green-700,
+
+html[data-theme='dark']
+.text-emerald-600,
+
+html[data-theme='dark']
+.text-emerald-700 {
+  color:
+    var(--success-text)
+    !important;
+}
+
+
+/* WARNING */
+
+html[data-theme='dark']
+.bg-amber-50,
+
+html[data-theme='dark']
+.bg-orange-50,
+
+html[data-theme='dark']
+[class~='bg-amber-50/40'],
+
+html[data-theme='dark']
+[class~='bg-amber-50/50'],
+
+html[data-theme='dark']
+[class~='bg-amber-50/60'] {
+  background-color:
+    var(--warning-surface)
+    !important;
+}
+
+
+html[data-theme='dark']
+.text-amber-600,
+
+html[data-theme='dark']
+.text-amber-700,
+
+html[data-theme='dark']
+.text-orange-500,
+
+html[data-theme='dark']
+.text-orange-600,
+
+html[data-theme='dark']
+.text-orange-700 {
+  color:
+    var(--warning-text)
+    !important;
+}
+
+
+/* DANGER */
+
+html[data-theme='dark']
+.bg-red-50,
+
+html[data-theme='dark']
+.bg-rose-50,
+
+html[data-theme='dark']
+[class~='bg-red-50/30'],
+
+html[data-theme='dark']
+[class~='bg-red-50/40'] {
+  background-color:
+    var(--danger-surface)
+    !important;
+}
+
+
+html[data-theme='dark']
+.text-red-500,
+
+html[data-theme='dark']
+.text-red-600,
+
+html[data-theme='dark']
+.text-red-700,
+
+html[data-theme='dark']
+.text-rose-500,
+
+html[data-theme='dark']
+.text-rose-600 {
+  color:
+    var(--danger-text)
+    !important;
+}
+
+
+/* INFO */
+
+html[data-theme='dark']
+.bg-indigo-50,
+
+html[data-theme='dark']
+.bg-blue-50,
+
+html[data-theme='dark']
+.bg-purple-50,
+
+html[data-theme='dark']
+[class~='bg-indigo-50/30'],
+
+html[data-theme='dark']
+[class~='bg-indigo-50/40'],
+
+html[data-theme='dark']
+[class~='bg-indigo-50/60'],
+
+html[data-theme='dark']
+[class~='bg-purple-50/30'],
+
+html[data-theme='dark']
+[class~='bg-purple-50/60'] {
+  background-color:
+    var(--info-surface)
+    !important;
+}
+
+
+html[data-theme='dark']
+.text-indigo-600,
+
+html[data-theme='dark']
+.text-indigo-700,
+
+html[data-theme='dark']
+.text-blue-600,
+
+html[data-theme='dark']
+.text-blue-700,
+
+html[data-theme='dark']
+.text-purple-600,
+
+html[data-theme='dark']
+.text-purple-700 {
+  color:
+    var(--info-text)
+    !important;
+}
+
+
+/* ============================================================
+   FORM ELEMENTS
+   ============================================================ */
+
+html[data-theme='dark']
+input,
+
+html[data-theme='dark']
+textarea,
+
+html[data-theme='dark']
+select {
+  background-color:
+    var(--input-bg)
+    !important;
+
+  border-color:
+    var(--border-strong)
+    !important;
+
+  color:
+    var(--text-primary)
+    !important;
+}
+
+
+html[data-theme='dark']
+input::placeholder,
+
+html[data-theme='dark']
+textarea::placeholder {
+  color:
+    var(--text-muted)
+    !important;
+}
+
+
+html[data-theme='dark']
+option {
+  background:
+    var(--surface);
+
+  color:
+    var(--text-primary);
+}
+
+
+/* ============================================================
+   TABLES
+   ============================================================ */
+
+html[data-theme='dark']
+thead,
+
+html[data-theme='dark']
+thead.bg-slate-50 {
+  background:
+    var(--surface-soft)
+    !important;
+}
+
+
+html[data-theme='dark']
+[class~='hover:bg-slate-50']:hover,
+
+html[data-theme='dark']
+[class~='hover:bg-slate-50/50']:hover {
+  background-color:
+    var(--surface-muted)
+    !important;
+}
+
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+
+.sidebar-gradient {
+  background:
+    linear-gradient(
+      270deg,
+      #4235BA 0%,
+      #9647FE 100%
+    );
+}
+
+
+html[data-theme='dark']
+.sidebar-gradient {
+  background:
+    linear-gradient(
+      180deg,
+      #312e81 0%,
+      #4c1d95 48%,
+      #312e81 100%
+    )
+    !important;
+}
+
+
+.sidebar-item-active {
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.18
+    );
+
+  color:
+    #ffffff;
+
+  font-weight:
+    600;
+
+  box-shadow:
+    inset
+    0 0 0 1px
+    rgba(
+      255,
+      255,
+      255,
+      0.15
+    );
+}
+
+
+.sidebar-item-hover:hover {
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.10
+    );
+}
+
+
+/* ============================================================
+   SKELETON
+   ============================================================ */
+
+html[data-theme='dark']
+.skeleton {
+  background:
+    linear-gradient(
+      90deg,
+      #1e293b 25%,
+      #334155 40%,
+      #1e293b 60%
+    );
+
+  background-size:
+    400px 100%;
+}
+
+
+/* ============================================================
+   ANIMATION LIBRARY
+   ============================================================ */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+
+@keyframes fadeInUp {
+
+  from {
+    opacity: 0;
+
+    transform:
+      translateY(
+        24px
+      );
+  }
+
+  to {
+    opacity: 1;
+
+    transform:
+      translateY(
+        0
+      );
+  }
+}
+
+
+@keyframes fadeInDown {
+
+  from {
+    opacity: 0;
+
+    transform:
+      translateY(
+        -16px
+      );
+  }
+
+  to {
+    opacity: 1;
+
+    transform:
+      translateY(
+        0
+      );
+  }
+}
+
+
+@keyframes popIn {
+
+  0% {
+    opacity: 0;
+
+    transform:
+      scale(
+        .85
+      );
+  }
+
+  70% {
+    transform:
+      scale(
+        1.03
+      );
+  }
+
+  100% {
+    opacity: 1;
+
+    transform:
+      scale(
+        1
+      );
+  }
+}
+
+
+@keyframes slideInLeft {
+
+  from {
+    opacity: 0;
+
+    transform:
+      translateX(
+        -28px
+      );
+  }
+
+  to {
+    opacity: 1;
+
+    transform:
+      translateX(
+        0
+      );
+  }
+}
+
+
+@keyframes slideInRight {
+
+  from {
+    opacity: 0;
+
+    transform:
+      translateX(
+        28px
+      );
+  }
+
+  to {
+    opacity: 1;
+
+    transform:
+      translateX(
+        0
+      );
+  }
+}
+
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform:
+      translateY(
+        0
+      );
+  }
+
+  50% {
+    transform:
+      translateY(
+        -12px
+      );
+  }
+}
+
+
+@keyframes wiggle {
+
+  0%,
+  100% {
+    transform:
+      rotate(
+        0
+      );
+  }
+
+  15% {
+    transform:
+      rotate(
+        16deg
+      );
+  }
+
+  30% {
+    transform:
+      rotate(
+        -8deg
+      );
+  }
+
+  45% {
+    transform:
+      rotate(
+        14deg
+      );
+  }
+
+  60% {
+    transform:
+      rotate(
+        -4deg
+      );
+  }
+
+  75% {
+    transform:
+      rotate(
+        10deg
+      );
+  }
+}
+
+
+@keyframes shimmer {
+
+  from {
+    background-position:
+      -400px 0;
+  }
+
+  to {
+    background-position:
+      400px 0;
+  }
+}
+
+
+@keyframes gradientMove {
+
+  0% {
+    background-position:
+      0% 50%;
+  }
+
+  50% {
+    background-position:
+      100% 50%;
+  }
+
+  100% {
+    background-position:
+      0% 50%;
+  }
+}
+
+
+@keyframes pulseRing {
+
+  0% {
+    box-shadow:
+      0 0 0 0
+      rgba(
+        99,
+        102,
+        241,
+        .4
+      );
+  }
+
+  70% {
+    box-shadow:
+      0 0 0 14px
+      rgba(
+        99,
+        102,
+        241,
+        0
+      );
+  }
+
+  100% {
+    box-shadow:
+      0 0 0 0
+      rgba(
+        99,
+        102,
+        241,
+        0
+      );
+  }
+}
+
+
+@keyframes barGrow {
+  from {
+    width: 0;
+  }
+}
+
+
+@keyframes spinSlow {
+  to {
+    transform:
+      rotate(
+        360deg
+      );
+  }
+}
+
+
+@keyframes bounceSoft {
+
+  0%,
+  100% {
+    transform:
+      translateY(
+        0
+      );
+  }
+
+  50% {
+    transform:
+      translateY(
+        -6px
+      );
+  }
+}
+
+
+@keyframes themeIconEnter {
+
+  from {
+    opacity: 0;
+
+    transform:
+      rotate(
+        -90deg
+      )
+      scale(
+        .55
+      );
+  }
+
+  to {
+    opacity: 1;
+
+    transform:
+      rotate(
+        0
+      )
+      scale(
+        1
+      );
+  }
+}
+
+
+/* ============================================================
+   UTILITIES
+   ============================================================ */
 
 @layer utilities {
-  /* entrance */
-  .anim-in { animation: fadeIn .45s ease both; }
-  .anim-up { animation: fadeInUp .55s cubic-bezier(.22,1,.36,1) both; }
-  .anim-down { animation: fadeInDown .5s ease both; }
-  .anim-pop { animation: popIn .5s cubic-bezier(.22,1,.36,1) both; }
-  .anim-left { animation: slideInLeft .5s cubic-bezier(.22,1,.36,1) both; }
-  .anim-right { animation: slideInRight .5s cubic-bezier(.22,1,.36,1) both; }
 
-  /* berulang (loop) */
-  .anim-float { animation: float 3.5s ease-in-out infinite; }
-  .anim-wiggle { animation: wiggle 2.4s ease-in-out infinite; transform-origin: 70% 70%; display: inline-block; }
-  .anim-bounce-soft { animation: bounceSoft 2s ease-in-out infinite; }
-  .anim-spin-slow { animation: spinSlow 10s linear infinite; }
-  .anim-pulse-ring { animation: pulseRing 2s ease-out infinite; }
+  .anim-in {
+    animation:
+      fadeIn
+      .45s
+      ease
+      both;
+  }
 
-  /* elemen khusus */
-  .anim-bar { animation: barGrow 1.2s cubic-bezier(.22,1,.36,1) both; }
+
+  .anim-up {
+    animation:
+      fadeInUp
+      .55s
+      cubic-bezier(
+        .22,
+        1,
+        .36,
+        1
+      )
+      both;
+  }
+
+
+  .anim-down {
+    animation:
+      fadeInDown
+      .5s
+      ease
+      both;
+  }
+
+
+  .anim-pop {
+    animation:
+      popIn
+      .5s
+      cubic-bezier(
+        .22,
+        1,
+        .36,
+        1
+      )
+      both;
+  }
+
+
+  .anim-left {
+    animation:
+      slideInLeft
+      .5s
+      cubic-bezier(
+        .22,
+        1,
+        .36,
+        1
+      )
+      both;
+  }
+
+
+  .anim-right {
+    animation:
+      slideInRight
+      .5s
+      cubic-bezier(
+        .22,
+        1,
+        .36,
+        1
+      )
+      both;
+  }
+
+
+  .anim-float {
+    animation:
+      float
+      3.5s
+      ease-in-out
+      infinite;
+  }
+
+
+  .anim-wiggle {
+    animation:
+      wiggle
+      2.4s
+      ease-in-out
+      infinite;
+
+    transform-origin:
+      70% 70%;
+
+    display:
+      inline-block;
+  }
+
+
+  .anim-bounce-soft {
+    animation:
+      bounceSoft
+      2s
+      ease-in-out
+      infinite;
+  }
+
+
+  .anim-spin-slow {
+    animation:
+      spinSlow
+      10s
+      linear
+      infinite;
+  }
+
+
+  .anim-pulse-ring {
+    animation:
+      pulseRing
+      2s
+      ease-out
+      infinite;
+  }
+
+
+  .anim-bar {
+    animation:
+      barGrow
+      1.2s
+      cubic-bezier(
+        .22,
+        1,
+        .36,
+        1
+      )
+      both;
+  }
+
+
   .gradient-text {
-    background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899, #6366f1);
-    background-size: 300% auto;
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    animation: gradientMove 6s linear infinite;
-  }
-  .card-hover { transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s ease; }
-  .card-hover:hover { transform: translateY(-3px); box-shadow: 0 12px 24px -8px rgba(15,23,42,.14); }
-  .btn-press { transition: transform .12s ease, box-shadow .2s ease, background-color .2s ease; }
-  .btn-press:active { transform: scale(.96); }
-  .btn-press:hover { transform: translateY(-1px); }
+    background:
+      linear-gradient(
+        90deg,
+        #6366f1,
+        #a855f7,
+        #ec4899,
+        #6366f1
+      );
 
-  /* skeleton loading */
+    background-size:
+      300% auto;
+
+    -webkit-background-clip:
+      text;
+
+    background-clip:
+      text;
+
+    color:
+      transparent;
+
+    animation:
+      gradientMove
+      6s
+      linear
+      infinite;
+  }
+
+
+  .card-hover {
+    transition:
+      transform
+      .25s
+      cubic-bezier(
+        .22,
+        1,
+        .36,
+        1
+      ),
+      box-shadow
+      .25s
+      ease;
+  }
+
+
+  .card-hover:hover {
+    transform:
+      translateY(
+        -3px
+      );
+
+    box-shadow:
+      0 12px 24px -8px
+      rgba(
+        15,
+        23,
+        42,
+        .14
+      );
+  }
+
+
+  html[data-theme='dark']
+  .card-hover:hover {
+    box-shadow:
+      0 16px 32px -16px
+      rgba(
+        0,
+        0,
+        0,
+        .62
+      );
+  }
+
+
+  .btn-press {
+    transition:
+      transform
+      .12s
+      ease,
+      box-shadow
+      .2s
+      ease,
+      background-color
+      .2s
+      ease;
+  }
+
+
+  .btn-press:active {
+    transform:
+      scale(
+        .96
+      );
+  }
+
+
+  .btn-press:hover {
+    transform:
+      translateY(
+        -1px
+      );
+  }
+
+
   .skeleton {
-    background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 40%, #e2e8f0 60%);
-    background-size: 400px 100%;
-    animation: shimmer 1.4s linear infinite;
+    background:
+      linear-gradient(
+        90deg,
+        #e2e8f0 25%,
+        #f1f5f9 40%,
+        #e2e8f0 60%
+      );
+
+    background-size:
+      400px 100%;
+
+    animation:
+      shimmer
+      1.4s
+      linear
+      infinite;
   }
 
-  /* background blob (login/register) */
-  .bg-blob { filter: blur(70px); opacity: .35; position: absolute; border-radius: 9999px; pointer-events: none; }
 
-  /* scrollbar halus */
-  ::-webkit-scrollbar { width: 8px; height: 8px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
-  ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  .bg-blob {
+    filter:
+      blur(
+        70px
+      );
 
-    /* ===== TEMA SIDEBAR CREATIVEMU (Figma) ===== */
- .sidebar-gradient {
-  background: linear-gradient(270deg, #4235BA 0%, #9647FE 100%);
-}
-  .sidebar-item-active {
-    background: rgba(255,255,255,0.18);
-    color: #fff;
-    font-weight: 600;
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);
-  }
-  .sidebar-item-hover:hover {
-    background: rgba(255,255,255,0.10);
+    opacity:
+      .35;
+
+    position:
+      absolute;
+
+    border-radius:
+      9999px;
+
+    pointer-events:
+      none;
   }
 
-    /* ===== LOGIN CAROUSEL ===== */
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+
+  ::-webkit-scrollbar-track {
+    background:
+      transparent;
+  }
+
+
+  ::-webkit-scrollbar-thumb {
+    background:
+      var(
+        --scrollbar
+      );
+
+    border-radius:
+      8px;
+  }
+
+
+  ::-webkit-scrollbar-thumb:hover {
+    background:
+      var(
+        --scrollbar-hover
+      );
+  }
+
+
+  /* LOGIN CAROUSEL */
+
   .login-slide {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    transition: opacity 1.2s ease-in-out, transform 6s ease-in-out;
-    transform: scale(1.05);
-  }
-  .login-slide.active {
-    opacity: 1;
-    transform: scale(1.15);
+    position:
+      absolute;
+
+    inset:
+      0;
+
+    opacity:
+      0;
+
+    transition:
+      opacity
+      1.2s
+      ease-in-out,
+      transform
+      6s
+      ease-in-out;
+
+    transform:
+      scale(
+        1.05
+      );
   }
 
-    /* ===== LOGIN AURORA ===== */
+
+  .login-slide.active {
+    opacity:
+      1;
+
+    transform:
+      scale(
+        1.15
+      );
+  }
+
+
+  /* LOGIN AURORA */
+
   .login-aurora {
     background:
-      radial-gradient(ellipse 80% 50% at 20% 0%, rgba(150, 71, 254, 0.35), transparent),
-      radial-gradient(ellipse 60% 40% at 80% 100%, rgba(66, 53, 186, 0.4), transparent),
-      radial-gradient(ellipse 40% 30% at 60% 40%, rgba(236, 72, 153, 0.15), transparent),
-      linear-gradient(180deg, #0f0a1e 0%, #1a1033 100%);
+      radial-gradient(
+        ellipse 80% 50%
+        at 20% 0%,
+        rgba(
+          150,
+          71,
+          254,
+          0.35
+        ),
+        transparent
+      ),
+
+      radial-gradient(
+        ellipse 60% 40%
+        at 80% 100%,
+        rgba(
+          66,
+          53,
+          186,
+          0.4
+        ),
+        transparent
+      ),
+
+      radial-gradient(
+        ellipse 40% 30%
+        at 60% 40%,
+        rgba(
+          236,
+          72,
+          153,
+          0.15
+        ),
+        transparent
+      ),
+
+      linear-gradient(
+        180deg,
+        #0f0a1e 0%,
+        #1a1033 100%
+      );
   }
+
+
   .login-card-glass {
-    background: rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 32px 64px -16px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.08);
+    background:
+      rgba(
+        255,
+        255,
+        255,
+        0.06
+      );
+
+    backdrop-filter:
+      blur(
+        24px
+      );
+
+    -webkit-backdrop-filter:
+      blur(
+        24px
+      );
+
+    border:
+      1px solid
+      rgba(
+        255,
+        255,
+        255,
+        0.12
+      );
+
+    box-shadow:
+      0 32px 64px -16px
+      rgba(
+        0,
+        0,
+        0,
+        0.5
+      ),
+
+      inset 0 1px 0
+      rgba(
+        255,
+        255,
+        255,
+        0.08
+      );
   }
+
+
   .login-input-dark {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    color: #fff;
-    transition: all 0.25s ease;
+    background:
+      rgba(
+        255,
+        255,
+        255,
+        0.05
+      );
+
+    border:
+      1px solid
+      rgba(
+        255,
+        255,
+        255,
+        0.12
+      );
+
+    color:
+      #ffffff;
+
+    transition:
+      all
+      0.25s
+      ease;
   }
-  .login-input-dark::placeholder { color: rgba(255,255,255,0.35); }
+
+
+  .login-input-dark::placeholder {
+    color:
+      rgba(
+        255,
+        255,
+        255,
+        0.35
+      );
+  }
+
+
   .login-input-dark:focus {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: #9647FE;
-    box-shadow: 0 0 0 4px rgba(150, 71, 254, 0.2), 0 0 32px rgba(150, 71, 254, 0.15);
+    background:
+      rgba(
+        255,
+        255,
+        255,
+        0.08
+      );
+
+    border-color:
+      #9647FE;
+
+    box-shadow:
+      0 0 0 4px
+      rgba(
+        150,
+        71,
+        254,
+        0.2
+      ),
+
+      0 0 32px
+      rgba(
+        150,
+        71,
+        254,
+        0.15
+      );
   }
+
+
   .login-shimmer-btn {
-    position: relative;
-    overflow: hidden;
+    position:
+      relative;
+
+    overflow:
+      hidden;
   }
+
+
   .login-shimmer-btn::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.25) 50%, transparent 70%);
-    transform: translateX(-150%);
-    animation: shimmer 3s ease-in-out infinite;
+    content:
+      '';
+
+    position:
+      absolute;
+
+    inset:
+      0;
+
+    background:
+      linear-gradient(
+        110deg,
+        transparent 30%,
+        rgba(
+          255,
+          255,
+          255,
+          0.25
+        ) 50%,
+        transparent 70%
+      );
+
+    transform:
+      translateX(
+        -150%
+      );
+
+    animation:
+      shimmer
+      3s
+      ease-in-out
+      infinite;
   }
-  @keyframes auroraFloat {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    33% { transform: translate(30px, -20px) scale(1.08); }
-    66% { transform: translate(-20px, 15px) scale(0.95); }
+
+
+  /* THEME CONTROLS */
+
+  .theme-toggle-thumb {
+    transition:
+      transform
+      .38s
+      cubic-bezier(
+        .22,
+        1,
+        .36,
+        1
+      ),
+      background-color
+      .3s
+      ease,
+      color
+      .3s
+      ease;
   }
-  .aurora-blob {
-    position: absolute;
-    border-radius: 9999px;
-    filter: blur(90px);
-    pointer-events: none;
-    animation: auroraFloat 12s ease-in-out infinite;
+
+
+  .theme-toggle-thumb svg,
+  .theme-icon-swap svg {
+    animation:
+      themeIconEnter
+      .4s
+      cubic-bezier(
+        .22,
+        1,
+        .36,
+        1
+      )
+      both;
   }
+
+
+  .theme-choice {
+    background:
+      var(
+        --surface
+      );
+  }
+
+
+  .theme-icon-stage {
+    transition:
+      background-color
+      .3s
+      ease,
+      color
+      .3s
+      ease,
+      transform
+      .3s
+      ease;
+  }
+
+
+  .theme-icon-stage:hover {
+    transform:
+      rotate(
+        3deg
+      )
+      scale(
+        1.04
+      );
+  }
+}
+
+
+/* ============================================================
+   LOGIN AURORA ANIMATION
+   ============================================================ */
+
+@keyframes auroraFloat {
+
+  0%,
+  100% {
+    transform:
+      translate(
+        0,
+        0
+      )
+      scale(
+        1
+      );
+  }
+
+  33% {
+    transform:
+      translate(
+        30px,
+        -20px
+      )
+      scale(
+        1.08
+      );
+  }
+
+  66% {
+    transform:
+      translate(
+        -20px,
+        15px
+      )
+      scale(
+        .95
+      );
+  }
+}
+
+
+.aurora-blob {
+  position:
+    absolute;
+
+  border-radius:
+    9999px;
+
+  filter:
+    blur(
+      90px
+    );
+
+  pointer-events:
+    none;
+
+  animation:
+    auroraFloat
+    12s
+    ease-in-out
+    infinite;
 }

@@ -2,15 +2,170 @@
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Creativemu Academy — Sistem Manajemen Magang</title>
-      <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>" />
-  <meta name="theme-color" content="#4f46e5" />
-  <meta name="description" content="Sistem Manajemen Magang — Creativemu Academy Sedayu" />
+
+    <!--
+      ========================================================
+      THEME BOOTSTRAP — HARUS SEBELUM CSS / REACT
+      ========================================================
+
+      Tujuan:
+      Browser sudah mengetahui dark/light
+      sebelum aplikasi React dirender.
+
+      Jadi:
+      refresh dark mode
+      TIDAK:
+      putih → dark
+
+      tetapi langsung:
+      dark → dark
+    -->
+    <script>
+      (function () {
+        try {
+          var savedTheme =
+            localStorage.getItem(
+              'theme'
+            );
+
+          var savedSource =
+            localStorage.getItem(
+              'theme-source'
+            );
+
+          /*
+            Migrasi preference lama
+            dari implementasi sebelumnya.
+          */
+          if (
+            savedTheme !== 'dark' &&
+            savedTheme !== 'light'
+          ) {
+            var legacy =
+              localStorage.getItem(
+                'mode-gelap'
+              );
+
+            if (legacy === 'true') {
+              savedTheme = 'dark';
+              savedSource = 'user';
+            }
+
+            if (legacy === 'false') {
+              savedTheme = 'light';
+              savedSource = 'user';
+            }
+          }
+
+          var systemDark =
+            window.matchMedia &&
+            window.matchMedia(
+              '(prefers-color-scheme: dark)'
+            ).matches;
+
+          var theme =
+            savedTheme === 'dark' ||
+            savedTheme === 'light'
+              ? savedTheme
+              : systemDark
+                ? 'dark'
+                : 'light';
+
+          var source =
+            savedSource === 'user'
+              ? 'user'
+              : 'system';
+
+          document.documentElement
+            .dataset.theme =
+            theme;
+
+          document.documentElement
+            .classList.toggle(
+              'dark',
+              theme === 'dark'
+            );
+
+          document.documentElement
+            .style.colorScheme =
+            theme;
+
+          localStorage.setItem(
+            'theme',
+            theme
+          );
+
+          localStorage.setItem(
+            'theme-source',
+            source
+          );
+        } catch (error) {
+          var fallbackDark =
+            window.matchMedia &&
+            window.matchMedia(
+              '(prefers-color-scheme: dark)'
+            ).matches;
+
+          var fallbackTheme =
+            fallbackDark
+              ? 'dark'
+              : 'light';
+
+          document.documentElement
+            .dataset.theme =
+            fallbackTheme;
+
+          document.documentElement
+            .classList.toggle(
+              'dark',
+              fallbackTheme ===
+                'dark'
+            );
+
+          document.documentElement
+            .style.colorScheme =
+            fallbackTheme;
+        }
+      })();
+    </script>
+
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="/favicon.svg"
+    />
+
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+
+    <meta
+      name="theme-color"
+      content="#f8fafc"
+    />
+
+    <meta
+      name="description"
+      content="Sistem Manajemen Magang — Creativemu Academy Sedayu"
+    />
+
+    <title>
+      Creativemu Academy — Sistem Manajemen Magang
+    </title>
+
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>"
+    />
   </head>
+
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+
+    <script
+      type="module"
+      src="/src/main.jsx"
+    ></script>
   </body>
 </html>

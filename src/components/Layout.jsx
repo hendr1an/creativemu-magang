@@ -152,7 +152,7 @@ const NAV = {
 
     {
       to: '/mentor/kelompok',
-      label: 'Kelompok Binaan',
+      label: 'Mentoring',
       Icon: Users,
     },
 
@@ -381,8 +381,6 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-slate-100 lg:flex">
-      {/* ================= SIDEBAR ================= */}
-
       <aside
         className={`fixed inset-y-0 left-0 z-40 flex w-64 max-w-[85vw] flex-col overflow-y-auto sidebar-gradient text-white transition-transform duration-300 lg:static lg:translate-x-0 ${
           menuBuka
@@ -390,8 +388,6 @@ export default function Layout() {
             : '-translate-x-full'
         }`}
       >
-        {/* BRAND */}
-
         <div className="flex items-center justify-between border-b border-white/15 p-5">
           <div>
             <p className="text-lg font-bold tracking-wide">
@@ -415,8 +411,6 @@ export default function Layout() {
             ✕
           </button>
         </div>
-
-        {/* MENU */}
 
         <nav className="flex-1 space-y-1 px-3 py-4">
           {(NAV[role] ?? []).map(
@@ -447,8 +441,6 @@ export default function Layout() {
               </NavLink>
             )
           )}
-
-          {/* PENGATURAN */}
 
           <div className="pt-3">
             <button
@@ -537,8 +529,6 @@ export default function Layout() {
           </div>
         </nav>
 
-        {/* LOGOUT */}
-
         <div className="border-t border-white/15 p-3">
           <button
             onClick={() =>
@@ -557,8 +547,6 @@ export default function Layout() {
         </div>
       </aside>
 
-      {/* BACKDROP */}
-
       {menuBuka && (
         <div
           onClick={() =>
@@ -569,11 +557,7 @@ export default function Layout() {
         />
       )}
 
-      {/* ================= MAIN ================= */}
-
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* TOPBAR */}
-
         <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 bg-white/80 px-4 py-3 backdrop-blur-md sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
             <button
@@ -647,8 +631,6 @@ export default function Layout() {
 
           <NotificationBell />
         </header>
-
-        {/* CONTENT */}
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
           <div

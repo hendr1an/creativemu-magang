@@ -9,8 +9,12 @@ import {
   useLocation,
 } from 'react-router-dom';
 
-import { useAuth } from '../context/AuthContext';
+import {
+  useAuth,
+} from '../context/AuthContext';
+
 import NotificationBell from './NotificationBell';
+import LogoutButton from './LogoutButton';
 
 import {
   LayoutDashboard,
@@ -22,7 +26,6 @@ import {
   ClipboardList,
   Award,
   Settings,
-  LogOut,
   Briefcase,
   Clock,
   BookOpen,
@@ -32,6 +35,7 @@ import {
   SlidersHorizontal,
   BarChart3,
 } from 'lucide-react';
+
 
 const NAV = {
   admin: [
@@ -97,6 +101,7 @@ const NAV = {
     },
   ],
 
+
   intern: [
     {
       to: '/intern',
@@ -142,6 +147,7 @@ const NAV = {
     },
   ],
 
+
   mentor: [
     {
       to: '/mentor',
@@ -170,6 +176,7 @@ const NAV = {
   ],
 };
 
+
 const PENGATURAN = {
   admin: [
     {
@@ -190,6 +197,7 @@ const PENGATURAN = {
       Icon: FileText,
     },
   ],
+
 
   intern: [
     {
@@ -222,6 +230,7 @@ const PENGATURAN = {
       Icon: FileText,
     },
   ],
+
 
   mentor: [
     {
@@ -256,131 +265,231 @@ const PENGATURAN = {
   ],
 };
 
+
 const LABEL_PERAN = {
-  admin: 'Administrator',
-  mentor: 'Pembimbing',
-  intern: 'Peserta Magang',
+  admin:
+    'Administrator',
+
+  mentor:
+    'Pembimbing',
+
+  intern:
+    'Peserta Magang',
 };
 
+
 function jamSapaan() {
-  const jam = parseInt(
-    new Intl.DateTimeFormat(
-      'id-ID',
-      {
-        timeZone:
-          'Asia/Jakarta',
-        hour: '2-digit',
-        hour12: false,
-      }
-    ).format(new Date()),
-    10
-  );
+  const jam =
+    parseInt(
+      new Intl.DateTimeFormat(
+        'id-ID',
+        {
+          timeZone:
+            'Asia/Jakarta',
 
-  if (jam < 12) {
+          hour:
+            '2-digit',
+
+          hour12:
+            false,
+        }
+      ).format(
+        new Date()
+      ),
+
+      10
+    );
+
+
+  if (
+    jam < 12
+  ) {
     return {
-      teks: 'Selamat Pagi',
-      ikon: '👋',
+      teks:
+        'Selamat Pagi',
+
+      ikon:
+        '👋',
     };
   }
 
-  if (jam < 17) {
+
+  if (
+    jam < 17
+  ) {
     return {
-      teks: 'Selamat Siang',
-      ikon: '☀️',
+      teks:
+        'Selamat Siang',
+
+      ikon:
+        '☀️',
     };
   }
 
-  if (jam < 20) {
+
+  if (
+    jam < 20
+  ) {
     return {
-      teks: 'Selamat Sore',
-      ikon: '🌇',
+      teks:
+        'Selamat Sore',
+
+      ikon:
+        '🌇',
     };
   }
+
 
   return {
-    teks: 'Selamat Malam',
-    ikon: '🌙',
+    teks:
+      'Selamat Malam',
+
+    ikon:
+      '🌙',
   };
 }
 
-const tanggalWib = () =>
-  new Intl.DateTimeFormat(
-    'id-ID',
-    {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      timeZone:
-        'Asia/Jakarta',
-    }
-  ).format(new Date());
+
+const tanggalWib =
+  () =>
+    new Intl.DateTimeFormat(
+      'id-ID',
+      {
+        weekday:
+          'long',
+
+        day:
+          'numeric',
+
+        month:
+          'long',
+
+        timeZone:
+          'Asia/Jakarta',
+      }
+    ).format(
+      new Date()
+    );
+
 
 export default function Layout() {
   const {
     profile,
     role,
     user,
-    logout,
-  } = useAuth();
+  } =
+    useAuth();
+
 
   const lokasi =
     useLocation();
 
-  const namaPendek = () =>
-    profile?.nama_lengkap
-      ?.split(' ')
-      .slice(0, 2)
-      .join(' ') ??
-    user?.email?.split('@')[0] ??
-    '';
+
+  const namaPendek =
+    () =>
+      profile?.nama_lengkap
+        ?.split(' ')
+        .slice(
+          0,
+          2
+        )
+        .join(' ') ??
+      user?.email
+        ?.split('@')[0] ??
+      '';
+
+
+  /* =======================================================
+     SETTINGS
+  ======================================================= */
 
   const [
     bukaSetting,
     setBukaSetting,
-  ] = useState(() =>
-    window.location.pathname.includes(
-      '/setting/'
-    )
-  );
+  ] =
+    useState(
+      () =>
+        window.location.pathname.includes(
+          '/setting/'
+        )
+    );
+
 
   const sedangDiSetting =
     lokasi.pathname.includes(
       '/setting/'
     );
 
-  useEffect(() => {
-    if (
-      lokasi.pathname.includes(
-        '/setting/'
-      )
-    ) {
-      setBukaSetting(true);
-    }
-  }, [lokasi.pathname]);
+
+  useEffect(
+    () => {
+      if (
+        lokasi.pathname.includes(
+          '/setting/'
+        )
+      ) {
+        setBukaSetting(
+          true
+        );
+      }
+    },
+    [
+      lokasi.pathname,
+    ]
+  );
+
+
+  /* =======================================================
+     MOBILE SIDEBAR
+  ======================================================= */
 
   const [
     menuBuka,
     setMenuBuka,
-  ] = useState(false);
+  ] =
+    useState(
+      false
+    );
 
-  useEffect(() => {
-    setMenuBuka(false);
-  }, [lokasi.pathname]);
 
-  useEffect(() => {
-    document.body.style.overflow =
-      menuBuka
-        ? 'hidden'
-        : '';
+  useEffect(
+    () => {
+      setMenuBuka(
+        false
+      );
+    },
+    [
+      lokasi.pathname,
+    ]
+  );
 
-    return () => {
+
+  useEffect(
+    () => {
       document.body.style.overflow =
-        '';
-    };
-  }, [menuBuka]);
+        menuBuka
+          ? 'hidden'
+          : '';
+
+
+      return () => {
+        document.body.style.overflow =
+          '';
+      };
+    },
+    [
+      menuBuka,
+    ]
+  );
+
 
   return (
     <div className="min-h-screen bg-slate-100 lg:flex">
+
+      {/* ===================================================
+          SIDEBAR
+      =================================================== */}
+
       <aside
         className={`fixed inset-y-0 left-0 z-40 flex w-64 max-w-[85vw] flex-col overflow-y-auto sidebar-gradient text-white transition-transform duration-300 lg:static lg:translate-x-0 ${
           menuBuka
@@ -388,6 +497,9 @@ export default function Layout() {
             : '-translate-x-full'
         }`}
       >
+
+        {/* LOGO */}
+
         <div className="flex items-center justify-between border-b border-white/15 p-5">
           <div>
             <p className="text-lg font-bold tracking-wide">
@@ -397,28 +509,49 @@ export default function Layout() {
             <p className="text-[10px] font-semibold tracking-[0.25em] text-white/60">
               {LABEL_PERAN[
                 role
-              ] ?? role}
+              ] ??
+                role}
             </p>
           </div>
 
+
           <button
+            type="button"
             onClick={() =>
-              setMenuBuka(false)
+              setMenuBuka(
+                false
+              )
             }
-            className="rounded-lg p-2 text-white/60 hover:bg-white/10 hover:text-white lg:hidden"
+            className="rounded-lg p-2 text-white/60 transition hover:bg-white/10 hover:text-white lg:hidden"
             aria-label="Tutup menu"
           >
             ✕
           </button>
         </div>
 
+
+        {/* NAV */}
+
         <nav className="flex-1 space-y-1 px-3 py-4">
-          {(NAV[role] ?? []).map(
-            (item) => (
+          {(
+            NAV[
+              role
+            ] ??
+            []
+          ).map(
+            (
+              item
+            ) => (
               <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
+                key={
+                  item.to
+                }
+                to={
+                  item.to
+                }
+                end={
+                  item.end
+                }
                 className={({
                   isActive,
                 }) =>
@@ -430,20 +563,30 @@ export default function Layout() {
                 }
               >
                 <item.Icon
-                  size={18}
-                  strokeWidth={2}
+                  size={
+                    18
+                  }
+                  strokeWidth={
+                    2
+                  }
                   className="shrink-0"
                 />
 
                 <span>
-                  {item.label}
+                  {
+                    item.label
+                  }
                 </span>
               </NavLink>
             )
           )}
 
+
+          {/* SETTINGS */}
+
           <div className="pt-3">
             <button
+              type="button"
               onClick={() =>
                 setBukaSetting(
                   !bukaSetting
@@ -457,16 +600,23 @@ export default function Layout() {
             >
               <span className="flex items-center gap-3">
                 <Settings
-                  size={18}
-                  strokeWidth={2}
+                  size={
+                    18
+                  }
+                  strokeWidth={
+                    2
+                  }
                   className="shrink-0"
                 />
 
                 Pengaturan
               </span>
 
+
               <ChevronDown
-                size={14}
+                size={
+                  14
+                }
                 className={`text-white/60 transition-transform duration-300 ${
                   bukaSetting
                     ? 'rotate-180'
@@ -474,6 +624,7 @@ export default function Layout() {
                 }`}
               />
             </button>
+
 
             <div
               className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-300 ease-out ${
@@ -487,9 +638,12 @@ export default function Layout() {
                   {(
                     PENGATURAN[
                       role
-                    ] ?? []
+                    ] ??
+                    []
                   ).map(
-                    (item) => (
+                    (
+                      item
+                    ) => (
                       <NavLink
                         key={
                           item.to
@@ -529,40 +683,57 @@ export default function Layout() {
           </div>
         </nav>
 
-        <div className="border-t border-white/15 p-3">
-          <button
-            onClick={() =>
-              logout()
-            }
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-red-300 transition hover:bg-red-500/20"
-          >
-            <LogOut
-              size={18}
-              strokeWidth={2}
-              className="shrink-0"
-            />
 
-            Logout
-          </button>
+        {/* =================================================
+            LOGOUT SUDAH DIPINDAHKAN KE TOPBAR
+        ================================================= */}
+
+        <div className="border-t border-white/10 px-5 py-3">
+          <p className="text-center text-[9px] font-semibold tracking-wide text-white/30">
+            Creativemu Academy
+          </p>
         </div>
       </aside>
+
+
+      {/* ===================================================
+          MOBILE BACKDROP
+      =================================================== */}
 
       {menuBuka && (
         <div
           onClick={() =>
-            setMenuBuka(false)
+            setMenuBuka(
+              false
+            )
           }
           className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm lg:hidden"
           aria-hidden="true"
         />
       )}
 
+
+      {/* ===================================================
+          CONTENT
+      =================================================== */}
+
       <div className="flex min-w-0 flex-1 flex-col">
+
+        {/* =================================================
+            TOPBAR
+        ================================================= */}
+
         <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 bg-white/80 px-4 py-3 backdrop-blur-md sm:px-6">
+
+          {/* LEFT */}
+
           <div className="flex min-w-0 items-center gap-3">
             <button
+              type="button"
               onClick={() =>
-                setMenuBuka(true)
+                setMenuBuka(
+                  true
+                )
               }
               className="flex h-10 w-10 items-center justify-center rounded-lg text-xl text-slate-600 transition hover:bg-slate-100 lg:hidden"
               aria-label="Buka menu"
@@ -599,6 +770,7 @@ export default function Layout() {
               </svg>
             </button>
 
+
             <div className="min-w-0">
               <p className="truncate text-sm font-bold text-slate-800 sm:text-base">
                 <span className="anim-wiggle mr-1 inline-block">
@@ -615,22 +787,52 @@ export default function Layout() {
                 ,{' '}
 
                 <span className="gradient-text">
-                  {namaPendek()}
+                  {
+                    namaPendek()
+                  }
                 </span>
                 !
               </p>
 
+
               <p className="hidden truncate text-[11px] font-medium text-slate-400 sm:block">
                 {LABEL_PERAN[
                   role
-                ] ?? role}{' '}
-                · {tanggalWib()}
+                ] ??
+                  role}{' '}
+
+                ·{' '}
+
+                {
+                  tanggalWib()
+                }
               </p>
             </div>
           </div>
 
-          <NotificationBell />
+
+          {/* ===============================================
+              RIGHT ACTIONS
+          =============================================== */}
+
+          <div className="flex shrink-0 items-center gap-2">
+
+            <NotificationBell />
+
+            <div
+              className="h-6 w-px bg-slate-200"
+              aria-hidden="true"
+            />
+
+            <LogoutButton />
+
+          </div>
         </header>
+
+
+        {/* =================================================
+            PAGE
+        ================================================= */}
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
           <div

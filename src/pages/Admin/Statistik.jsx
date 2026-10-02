@@ -597,43 +597,30 @@ export default function Statistik() {
   );
 
 
-  /* =======================================================
-     DATA
-  ======================================================= */
-
   const ringkasan =
     data?.ringkasan ??
     {};
-
 
   const divisi =
     data?.divisi ??
     [];
 
-
   const bulanan =
     data?.bulanan ??
     [];
-
 
   const tahunan =
     data?.tahunan ??
     [];
 
-
   const instansi =
     data?.instansi ??
     [];
-
 
   const penonaktifan =
     data?.penonaktifan ??
     [];
 
-
-  /* =======================================================
-     SCALE
-  ======================================================= */
 
   const maxPendaftarBulanan =
     useMemo(
@@ -647,7 +634,6 @@ export default function Statistik() {
                 item.total_pendaftar
               )
           ),
-
           1
         ),
       [
@@ -668,7 +654,6 @@ export default function Statistik() {
                 item.total_pendaftar
               )
           ),
-
           1
         ),
       [
@@ -689,7 +674,6 @@ export default function Statistik() {
                 item.jumlah
               )
           ),
-
           1
         ),
       [
@@ -739,13 +723,6 @@ export default function Statistik() {
 
 
     try {
-      /*
-        Ambil riwayat berdasarkan alasan persis
-        yang diklik pada card statistik.
-
-        Relationship interns berasal dari FK:
-        account_suspensions.intern_id -> interns.id
-      */
       const {
         data:
           rows,
@@ -768,6 +745,7 @@ export default function Statistik() {
               nama_lengkap,
               email,
               instansi,
+              jurusan,
               divisi,
               status_magang,
               tanggal_mulai,
@@ -839,10 +817,6 @@ export default function Statistik() {
   }
 
 
-  /* =======================================================
-     LOADING
-  ======================================================= */
-
   if (
     loading &&
     !data
@@ -878,9 +852,7 @@ export default function Statistik() {
 
   return (
     <div>
-      {/* ===================================================
-          HEADER
-      =================================================== */}
+      {/* HEADER */}
 
       <div className="anim-up flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
@@ -919,43 +891,25 @@ export default function Statistik() {
               }
               className="appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pl-3 pr-9 text-xs font-bold text-slate-600 shadow-sm outline-none focus:border-indigo-500"
             >
-              <option
-                value={
-                  6
-                }
-              >
+              <option value={6}>
                 6 bulan
               </option>
 
-              <option
-                value={
-                  12
-                }
-              >
+              <option value={12}>
                 12 bulan
               </option>
 
-              <option
-                value={
-                  24
-                }
-              >
+              <option value={24}>
                 24 bulan
               </option>
 
-              <option
-                value={
-                  36
-                }
-              >
+              <option value={36}>
                 36 bulan
               </option>
             </select>
 
             <ChevronDown
-              size={
-                14
-              }
+              size={14}
               className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
             />
           </div>
@@ -972,9 +926,7 @@ export default function Statistik() {
             className="btn-press flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-600 shadow-sm transition hover:bg-slate-50 disabled:opacity-50"
           >
             <RefreshCw
-              size={
-                15
-              }
+              size={15}
               className={
                 loading
                   ? 'animate-spin'
@@ -1000,16 +952,10 @@ export default function Statistik() {
       )}
 
 
-      {/* ===================================================
-          ERROR
-      =================================================== */}
-
       {error && (
         <div className="anim-down mt-5 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4">
           <AlertTriangle
-            size={
-              20
-            }
+            size={20}
             className="mt-0.5 shrink-0 text-red-600"
           />
 
@@ -1032,16 +978,12 @@ export default function Statistik() {
       {!error &&
         data && (
           <>
-            {/* =============================================
-                RINGKASAN PENDAFTARAN
-            ============================================= */}
+            {/* RINGKASAN PENDAFTARAN */}
 
             <section className="mt-7">
               <div className="flex items-center gap-2">
                 <BarChart3
-                  size={
-                    18
-                  }
+                  size={18}
                   className="text-indigo-600"
                 />
 
@@ -1108,16 +1050,12 @@ export default function Statistik() {
             </section>
 
 
-            {/* =============================================
-                PESERTA
-            ============================================= */}
+            {/* PESERTA */}
 
             <section className="mt-7">
               <div className="flex items-center gap-2">
                 <Activity
-                  size={
-                    18
-                  }
+                  size={18}
                   className="text-indigo-600"
                 />
 
@@ -1184,9 +1122,7 @@ export default function Statistik() {
             </section>
 
 
-            {/* =============================================
-                PER DIVISI
-            ============================================= */}
+            {/* PER DIVISI */}
 
             <section className="mt-8">
               <div>
@@ -1358,9 +1294,7 @@ export default function Statistik() {
             </section>
 
 
-            {/* =============================================
-                GRAFIK BULANAN
-            ============================================= */}
+            {/* GRAFIK BULANAN */}
 
             <section className="mt-8 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:p-5">
               <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
@@ -1384,9 +1318,7 @@ export default function Statistik() {
 
                 <div className="flex items-center gap-1 text-[10px] font-medium text-slate-400">
                   <TrendingUp
-                    size={
-                      13
-                    }
+                    size={13}
                   />
 
                   Maksimum{' '}
@@ -1524,9 +1456,7 @@ export default function Statistik() {
             </section>
 
 
-            {/* =============================================
-                REKAP BULANAN
-            ============================================= */}
+            {/* REKAP BULANAN */}
 
             <section className="mt-6 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
               <div className="border-b border-slate-100 p-4 sm:p-5">
@@ -1647,7 +1577,6 @@ export default function Statistik() {
                               <div className="flex flex-wrap gap-1 text-[9px]">
                                 <span className="rounded bg-slate-100 px-1.5 py-0.5">
                                   A{' '}
-
                                   {angka(
                                     item.div_admin
                                   )}
@@ -1655,7 +1584,6 @@ export default function Statistik() {
 
                                 <span className="rounded bg-slate-100 px-1.5 py-0.5">
                                   S{' '}
-
                                   {angka(
                                     item.div_sosmed
                                   )}
@@ -1663,7 +1591,6 @@ export default function Statistik() {
 
                                 <span className="rounded bg-slate-100 px-1.5 py-0.5">
                                   M{' '}
-
                                   {angka(
                                     item.div_marketplace
                                   )}
@@ -1671,7 +1598,6 @@ export default function Statistik() {
 
                                 <span className="rounded bg-slate-100 px-1.5 py-0.5">
                                   W{' '}
-
                                   {angka(
                                     item.div_webdev
                                   )}
@@ -1687,14 +1613,9 @@ export default function Statistik() {
             </section>
 
 
-            {/* =============================================
-                TAHUNAN + INSTANSI
-            ============================================= */}
+            {/* TAHUNAN + INSTANSI */}
 
             <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
-
-              {/* TAHUNAN */}
-
               <section className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
                 <div className="border-b border-slate-100 p-4 sm:p-5">
                   <h2 className="font-bold text-slate-800">
@@ -1786,9 +1707,7 @@ export default function Statistik() {
                 <div className="border-b border-slate-100 p-4 sm:p-5">
                   <div className="flex items-center gap-2">
                     <Building2
-                      size={
-                        18
-                      }
+                      size={18}
                       className="text-indigo-600"
                     />
 
@@ -1835,7 +1754,6 @@ export default function Statistik() {
                               maxInstansi
                             ) *
                               100,
-
                             2
                           );
 
@@ -1916,17 +1834,13 @@ export default function Statistik() {
             </div>
 
 
-            {/* =============================================
-                PENONAKTIFAN
-            ============================================= */}
+            {/* PENONAKTIFAN */}
 
             <section className="mt-6 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
               <div className="border-b border-slate-100 p-4 sm:p-5">
                 <div className="flex items-center gap-2">
                   <UserMinus
-                    size={
-                      18
-                    }
+                    size={18}
                     className="text-red-500"
                   />
 
@@ -1982,7 +1896,6 @@ export default function Statistik() {
                             maxSuspensi
                           ) *
                             100,
-
                           3
                         );
 
@@ -2014,9 +1927,7 @@ export default function Statistik() {
                                 peserta
 
                                 <ChevronRight
-                                  size={
-                                    12
-                                  }
+                                  size={12}
                                   className="transition-transform duration-200 group-hover:translate-x-0.5"
                                 />
                               </p>
@@ -2073,9 +1984,7 @@ export default function Statistik() {
             </section>
 
 
-            {/* =============================================
-                MODAL DETAIL PENONAKTIFAN
-            ============================================= */}
+            {/* MODAL DETAIL PENONAKTIFAN */}
 
             <Modal
               open={
@@ -2092,8 +2001,6 @@ export default function Statistik() {
             >
               {suspensiTerpilih && (
                 <div>
-                  {/* SUMMARY */}
-
                   <div className="rounded-xl border border-red-100 bg-red-50 p-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
@@ -2134,8 +2041,6 @@ export default function Statistik() {
                   </div>
 
 
-                  {/* LOADING */}
-
                   {loadingDetailSuspensi ? (
                     <div className="flex flex-col items-center justify-center py-10">
                       <span className="inline-block h-7 w-7 animate-spin rounded-full border-[3px] border-slate-200 border-t-red-500" />
@@ -2148,9 +2053,7 @@ export default function Statistik() {
                   ) : errorDetailSuspensi ? (
                     <div className="mt-3 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3">
                       <AlertTriangle
-                        size={
-                          16
-                        }
+                        size={16}
                         className="mt-0.5 shrink-0 text-red-600"
                       />
 
@@ -2197,8 +2100,6 @@ export default function Statistik() {
                               }}
                             >
                               <div className="flex items-start gap-3">
-                                {/* AVATAR */}
-
                                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-red-500 to-rose-600 text-xs font-extrabold text-white shadow-sm shadow-red-500/20">
                                   {inisial(
                                     intern?.nama_lengkap
@@ -2227,11 +2128,10 @@ export default function Statistik() {
                                   </div>
 
 
-                                  {/* META */}
-
                                   <div className="mt-2 flex flex-wrap gap-1.5">
                                     {intern?.divisi && (
                                       <span className="rounded-full bg-indigo-50 px-2 py-1 text-[9px] font-bold text-indigo-600">
+                                        🧩{' '}
                                         {
                                           intern.divisi
                                         }
@@ -2248,10 +2148,22 @@ export default function Statistik() {
                                         }
                                       </span>
                                     )}
+
+
+                                    <span
+                                      className={`max-w-full truncate rounded-full px-2 py-1 text-[9px] font-semibold ${
+                                        intern?.jurusan
+                                          ? 'bg-purple-50 text-purple-700'
+                                          : 'bg-amber-50 text-amber-600'
+                                      }`}
+                                    >
+                                      🎓{' '}
+
+                                      {intern?.jurusan ??
+                                        'Jurusan belum diisi'}
+                                    </span>
                                   </div>
 
-
-                                  {/* DATE */}
 
                                   <div className="mt-2 rounded-lg bg-slate-50 px-2.5 py-2">
                                     <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">
@@ -2266,8 +2178,6 @@ export default function Statistik() {
                                   </div>
 
 
-                                  {/* DETAIL */}
-
                                   {intern?.id && (
                                     <Link
                                       to={`/admin/peserta/${intern.id}`}
@@ -2281,9 +2191,7 @@ export default function Statistik() {
                                       Peserta
 
                                       <ExternalLink
-                                        size={
-                                          12
-                                        }
+                                        size={12}
                                       />
                                     </Link>
                                   )}
@@ -2299,10 +2207,6 @@ export default function Statistik() {
               )}
             </Modal>
 
-
-            {/* =============================================
-                CATATAN
-            ============================================= */}
 
             <div className="mt-6 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3">
               <p className="text-xs leading-relaxed text-amber-700">

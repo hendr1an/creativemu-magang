@@ -545,7 +545,6 @@ export default function PesertaDetail() {
                 {intern.status_magang.toUpperCase()}
               </span>
 
-              {/* DIVISI */}
               <span
                 className={`rounded-full px-2.5 py-0.5 text-[10px] font-extrabold ${
                   BADGE_DIVISI[
@@ -569,7 +568,21 @@ export default function PesertaDetail() {
                 ` · 🏫 ${intern.instansi}`}
             </p>
 
-            <p className="mt-0.5 text-[11px] text-slate-400">
+            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+              <span
+                className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
+                  intern.jurusan
+                    ? 'bg-purple-50 text-purple-700 ring-1 ring-purple-100'
+                    : 'bg-amber-50 text-amber-700 ring-1 ring-amber-100'
+                }`}
+              >
+                🎓{' '}
+                {intern.jurusan ??
+                  'Jurusan / Program Studi belum diisi'}
+              </span>
+            </div>
+
+            <p className="mt-1 text-[11px] text-slate-400">
               📅{' '}
               {fmtTanggal(
                 intern.tanggal_mulai
@@ -755,9 +768,12 @@ export default function PesertaDetail() {
                     '—',
                 ],
 
-                // =========================
-                // DIVISI — REVISI BOS
-                // =========================
+                [
+                  'Jurusan / Program Studi',
+                  intern.jurusan ??
+                    'Belum diisi',
+                ],
+
                 [
                   'Divisi',
                   intern.divisi ??
@@ -837,6 +853,20 @@ export default function PesertaDetail() {
                         }`}
                       >
                         🧩{' '}
+                        {
+                          nilai
+                        }
+                      </span>
+                    ) : label ===
+                      'Jurusan / Program Studi' ? (
+                      <span
+                        className={`max-w-[60%] rounded-full px-2.5 py-1 text-right text-[10px] font-bold ${
+                          intern.jurusan
+                            ? 'bg-purple-50 text-purple-700 ring-1 ring-purple-100'
+                            : 'bg-amber-50 text-amber-700 ring-1 ring-amber-100'
+                        }`}
+                      >
+                        🎓{' '}
                         {
                           nilai
                         }

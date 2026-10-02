@@ -5,6 +5,10 @@ import {
 } from 'react';
 
 import {
+  createPortal,
+} from 'react-dom';
+
+import {
   useNavigate,
 } from 'react-router-dom';
 
@@ -19,6 +23,20 @@ import {
 import {
   useAuth,
 } from '../context/AuthContext';
+
+
+/* =========================================================
+   CONSTANT
+========================================================= */
+
+const PANEL_MAX_WIDTH =
+  384;
+
+const PANEL_GAP =
+  8;
+
+const VIEWPORT_GAP =
+  12;
 
 
 /* =========================================================
@@ -41,8 +59,7 @@ const waktuRelatif =
 
     const menit =
       Math.floor(
-        diff /
-          60000
+        diff / 60000
       );
 
 
@@ -284,10 +301,9 @@ function ruteUntuk(
   role
 ) {
   /*
-    target_url selalu menjadi prioritas.
+    target_url selalu prioritas.
 
-    Ini mempertahankan exact deeplink
-    FASE 5-3.
+    Exact deeplink FASE 5-3 tetap dipertahankan.
   */
   if (
     notif?.target_url
@@ -314,9 +330,6 @@ function ikonUntuk(
     notif?.notification_type;
 
 
-  /*
-    Utamakan lifecycle type.
-  */
   if (
     type ===
     'subtask_new'
@@ -406,8 +419,7 @@ function ikonUntuk(
 
 
   /*
-    Fallback untuk notification lama
-    yang belum punya notification_type.
+    Fallback untuk notifikasi lama.
   */
   const j =
     (
@@ -621,34 +633,57 @@ export default function NotificationBell() {
   const [
     buka,
     setBuka,
-  ] = useState(false);
+  ] =
+    useState(false);
 
 
   const [
     tab,
     setTab,
-  ] = useState(
-    'baru'
-  );
+  ] =
+    useState(
+      'baru'
+    );
 
 
   const [
     hapusId,
     setHapusId,
-  ] = useState(
-    null
-  );
+  ] =
+    useState(
+      null
+    );
 
 
   const [
     refreshing,
     setRefreshing,
-  ] = useState(
-    false
-  );
+  ] =
+    useState(
+      false
+    );
 
 
-  const ref =
+  /*
+    Posisi panel portal.
+  */
+  const [
+    posisi,
+    setPosisi,
+  ] =
+    useState({
+      top: 72,
+      left: 12,
+      width: 320,
+      maxHeight: 500,
+    });
+
+
+  const triggerRef =
+    useRef(null);
+
+
+  const panelRef =
     useRef(null);
 
 
@@ -657,25 +692,158 @@ export default function NotificationBell() {
 
 
   /* =======================================================
+     HITUNG POSISI PANEL
+  ======================================================= */
+
+  function hitungPosisiPanel() {
+    const trigger =
+      triggerRef.current;
+
+
+    if (
+      !trigger
+    ) {
+      return;
+    }
+
+
+    const rect =
+      trigger.getBoundingClientRect();
+
+
+    const viewportWidth =
+      window.innerWidth;
+
+
+    const viewportHeight =
+      window.innerHeight;
+
+
+    /*
+      MOBILE:
+      hampir selebar viewport.
+
+      DESKTOP:
+      maksimal 384px.
+    */
+    const width =
+      Math.min(
+        PANEL_MAX_WIDTH,
+
+        viewportWidth -
+          VIEWPORT_GAP * 2
+      );
+
+
+    /*
+      Posisi awal:
+      right edge panel mengikuti right edge bell.
+    */
+    let left =
+      rect.right -
+      width;
+
+
+    /*
+      Clamp kiri.
+    */
+    if (
+      left <
+      VIEWPORT_GAP
+    ) {
+      left =
+        VIEWPORT_GAP;
+    }
+
+
+    /*
+      Clamp kanan.
+
+      Ini bagian yang mencegah popup terpotong
+      meskipun ada tombol Logout di sebelah bell.
+    */
+    const maksimumLeft =
+      viewportWidth -
+      width -
+      VIEWPORT_GAP;
+
+
+    if (
+      left >
+      maksimumLeft
+    ) {
+      left =
+        maksimumLeft;
+    }
+
+
+    const top =
+      rect.bottom +
+      PANEL_GAP;
+
+
+    /*
+      Panel tidak boleh melewati bawah layar.
+
+      Sisakan sedikit margin viewport.
+    */
+    const maxHeight =
+      Math.max(
+        240,
+
+        viewportHeight -
+          top -
+          VIEWPORT_GAP
+      );
+
+
+    setPosisi({
+      top,
+      left,
+      width,
+      maxHeight,
+    });
+  }
+
+
+  /* =======================================================
      CLICK OUTSIDE
   ======================================================= */
 
   useEffect(() => {
-    const klikLuar =
-      (
-        event
-      ) => {
-        if (
-          ref.current &&
-          !ref.current.contains(
-            event.target
-          )
-        ) {
-          setBuka(
-            false
-          );
-        }
-      };
+    if (!buka) {
+      return undefined;
+    }
+
+
+    function klikLuar(
+      event
+    ) {
+      const target =
+        event.target;
+
+
+      const klikTrigger =
+        triggerRef.current?.contains(
+          target
+        );
+
+
+      const klikPanel =
+        panelRef.current?.contains(
+          target
+        );
+
+
+      if (
+        !klikTrigger &&
+        !klikPanel
+      ) {
+        setBuka(
+          false
+        );
+      }
+    }
 
 
     document.addEventListener(
@@ -690,36 +858,142 @@ export default function NotificationBell() {
         klikLuar
       );
     };
-  }, []);
+  }, [
+    buka,
+  ]);
 
 
   /* =======================================================
-     REFRESH SAAT BELL DIBUKA
+     REPOSITION SAAT RESIZE / SCROLL
   ======================================================= */
 
-  async function toggleBell() {
-    const next =
-      !buka;
+  useEffect(() => {
+    if (!buka) {
+      return undefined;
+    }
 
 
-    setBuka(
-      next
+    hitungPosisiPanel();
+
+
+    function reposition() {
+      hitungPosisiPanel();
+    }
+
+
+    window.addEventListener(
+      'resize',
+      reposition
     );
 
 
-    if (next) {
-      setRefreshing(
-        true
+    /*
+      true = ikut menangkap scroll dari container lain,
+      bukan hanya window.
+    */
+    window.addEventListener(
+      'scroll',
+      reposition,
+      true
+    );
+
+
+    return () => {
+      window.removeEventListener(
+        'resize',
+        reposition
       );
 
 
-      try {
-        await muat();
-      } finally {
-        setRefreshing(
+      window.removeEventListener(
+        'scroll',
+        reposition,
+        true
+      );
+    };
+  }, [
+    buka,
+  ]);
+
+
+  /* =======================================================
+     ESCAPE
+  ======================================================= */
+
+  useEffect(() => {
+    if (!buka) {
+      return undefined;
+    }
+
+
+    function handleKeyDown(
+      event
+    ) {
+      if (
+        event.key ===
+        'Escape'
+      ) {
+        setBuka(
           false
         );
       }
+    }
+
+
+    document.addEventListener(
+      'keydown',
+      handleKeyDown
+    );
+
+
+    return () => {
+      document.removeEventListener(
+        'keydown',
+        handleKeyDown
+      );
+    };
+  }, [
+    buka,
+  ]);
+
+
+  /* =======================================================
+     OPEN / REFRESH
+  ======================================================= */
+
+  async function toggleBell() {
+    if (buka) {
+      setBuka(
+        false
+      );
+
+      return;
+    }
+
+
+    /*
+      Hitung dulu sebelum render portal,
+      supaya tidak sempat meloncat dari posisi default.
+    */
+    hitungPosisiPanel();
+
+
+    setBuka(
+      true
+    );
+
+
+    setRefreshing(
+      true
+    );
+
+
+    try {
+      await muat();
+    } finally {
+      setRefreshing(
+        false
+      );
     }
   }
 
@@ -741,19 +1015,12 @@ export default function NotificationBell() {
 
 
   /* =======================================================
-     CLICK NOTIFIKASI
+     CLICK NOTIFICATION
   ======================================================= */
 
   async function klikItem(
     notif
   ) {
-    /*
-      Item pada tab Belum Dibaca
-      selalu active unresolved.
-
-      Untuk tab Dibaca,
-      tandaiBaca tidak diperlukan.
-    */
     if (
       !notif.read_at
     ) {
@@ -784,7 +1051,7 @@ export default function NotificationBell() {
 
 
   /* =======================================================
-     DELETE ANIMATION
+     DELETE
   ======================================================= */
 
   function konfirmasiHapus(
@@ -795,11 +1062,12 @@ export default function NotificationBell() {
     );
 
 
-    setTimeout(
+    window.setTimeout(
       async () => {
         await hapus(
           id
         );
+
 
         setHapusId(
           null
@@ -814,13 +1082,6 @@ export default function NotificationBell() {
      DATA TAB
   ======================================================= */
 
-  /*
-    TAB BARU
-
-    HANYA:
-    read_at     NULL
-    resolved_at NULL
-  */
   const belumDibaca =
     notifs.filter(
       (
@@ -832,16 +1093,6 @@ export default function NotificationBell() {
     );
 
 
-  /*
-    TAB DIBACA
-
-    Notification informational maupun actionable
-    yang memang pernah dibuka user.
-
-    resolved notification yang belum pernah dibaca
-    tidak dipindahkan ke sini, karena user memang
-    tidak pernah membacanya.
-  */
   const sudahDibaca =
     notifs.filter(
       (
@@ -859,137 +1110,111 @@ export default function NotificationBell() {
 
 
   /* =======================================================
-     UI
+     POPOVER PORTAL
   ======================================================= */
 
-  return (
-    <div
-      className="relative"
-      ref={
-        ref
-      }
-    >
-      {/* ===================================================
-          BELL BUTTON
-      =================================================== */}
-
-      <button
-        type="button"
-        onClick={
-          toggleBell
+  const popover =
+    buka ? (
+      <div
+        ref={
+          panelRef
         }
-        className={`relative flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-lg transition-all duration-200 hover:scale-105 hover:bg-slate-200 active:scale-95 ${
-          unread > 0
-            ? 'anim-wiggle'
-            : ''
-        }`}
-        title="Notifikasi"
-        aria-label={`Notifikasi${
-          unread > 0
-            ? `, ${unread} belum dibaca`
-            : ''
-        }`}
+        className="anim-down fixed z-[9000] flex overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/15"
+        style={{
+          top:
+            `${posisi.top}px`,
+
+          left:
+            `${posisi.left}px`,
+
+          width:
+            `${posisi.width}px`,
+
+          maxHeight:
+            `${posisi.maxHeight}px`,
+        }}
       >
-        {unread >
-        0
-          ? '🔔'
-          : '🔕'}
-
-
-        {unread >
-          0 && (
-          <span className="anim-pop absolute -right-0.5 -top-0.5 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-black text-white shadow">
-            {unread >
-            99
-              ? '99+'
-              : unread}
-          </span>
-        )}
-      </button>
-
-
-      {/* ===================================================
-          POPOVER
-      =================================================== */}
-
-      {buka && (
-        <div className="anim-down absolute right-0 z-50 mt-2 w-[22rem] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl sm:w-96">
+        <div className="flex min-h-0 w-full flex-col">
 
           {/* ===============================================
               HEADER
           =============================================== */}
 
-          <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
-            <div className="min-w-0">
-              <p className="text-sm font-bold text-slate-800">
-                Notifikasi{' '}
+          <div className="shrink-0 border-b border-slate-100 px-3 py-3 sm:px-4">
+            <div className="flex items-start justify-between gap-2">
 
-                {unread >
-                  0 && (
-                  <span className="text-red-500">
-                    (
-                    {
-                      unread
-                    }{' '}
-                    baru)
-                  </span>
-                )}
-              </p>
+              {/* TITLE */}
 
-              <p className="mt-0.5 text-[10px] text-slate-400">
-                Hanya aktivitas
-                yang masih
-                relevan yang
-                dihitung sebagai
-                baru.
-              </p>
-            </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-bold text-slate-800">
+                  Notifikasi{' '}
+
+                  {unread >
+                    0 && (
+                    <span className="text-red-500">
+                      (
+                      {
+                        unread
+                      }{' '}
+                      baru)
+                    </span>
+                  )}
+                </p>
 
 
-            <div className="flex shrink-0 items-center gap-2">
-
-              {/* REFRESH */}
-
-              <button
-                type="button"
-                onClick={
-                  refreshManual
-                }
-                disabled={
-                  refreshing ||
-                  loadingNotif
-                }
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-indigo-600 disabled:opacity-40"
-                title="Refresh notifikasi"
-              >
-                <RefreshCw
-                  size={
-                    15
-                  }
-                  className={
-                    refreshing ||
-                    loadingNotif
-                      ? 'animate-spin'
-                      : ''
-                  }
-                />
-              </button>
+                <p className="mt-0.5 line-clamp-2 text-[9px] leading-relaxed text-slate-400 sm:text-[10px]">
+                  Hanya aktivitas
+                  yang masih relevan
+                  yang dihitung
+                  sebagai baru.
+                </p>
+              </div>
 
 
-              {/* MARK ALL */}
+              {/* ACTIONS */}
 
-              {unread >
-                0 && (
+              <div className="flex shrink-0 items-center gap-1">
+
                 <button
                   type="button"
                   onClick={
-                    tandaiSemuaBaca
+                    refreshManual
                   }
-                  className="text-[11px] font-semibold text-indigo-600 hover:underline"
+                  disabled={
+                    refreshing ||
+                    loadingNotif
+                  }
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-indigo-600 disabled:opacity-40"
+                  title="Refresh notifikasi"
+                  aria-label="Refresh notifikasi"
                 >
-                  Tandai dibaca
+                  <RefreshCw
+                    size={
+                      14
+                    }
+                    className={
+                      refreshing ||
+                      loadingNotif
+                        ? 'animate-spin'
+                        : ''
+                    }
+                  />
                 </button>
-              )}
+
+
+                {unread >
+                  0 && (
+                  <button
+                    type="button"
+                    onClick={
+                      tandaiSemuaBaca
+                    }
+                    className="whitespace-nowrap rounded-lg px-2 py-1.5 text-[10px] font-bold text-indigo-600 transition hover:bg-indigo-50 sm:text-[11px]"
+                  >
+                    Tandai dibaca
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -998,7 +1223,7 @@ export default function NotificationBell() {
               TAB
           =============================================== */}
 
-          <div className="flex border-b border-slate-100">
+          <div className="flex shrink-0 border-b border-slate-100">
             <button
               type="button"
               onClick={() =>
@@ -1006,18 +1231,20 @@ export default function NotificationBell() {
                   'baru'
                 )
               }
-              className={`flex-1 py-2.5 text-xs font-bold transition ${
+              className={`min-w-0 flex-1 px-2 py-2.5 text-[11px] font-bold transition sm:text-xs ${
                 tab ===
                 'baru'
                   ? 'border-b-2 border-indigo-600 text-indigo-600'
                   : 'text-slate-400 hover:text-slate-600'
               }`}
             >
-              Belum Dibaca (
-              {
-                belumDibaca.length
-              }
-              )
+              <span className="block truncate">
+                Belum Dibaca (
+                {
+                  belumDibaca.length
+                }
+                )
+              </span>
             </button>
 
 
@@ -1028,18 +1255,20 @@ export default function NotificationBell() {
                   'dibaca'
                 )
               }
-              className={`flex-1 py-2.5 text-xs font-bold transition ${
+              className={`min-w-0 flex-1 px-2 py-2.5 text-[11px] font-bold transition sm:text-xs ${
                 tab ===
                 'dibaca'
                   ? 'border-b-2 border-indigo-600 text-indigo-600'
                   : 'text-slate-400 hover:text-slate-600'
               }`}
             >
-              Dibaca (
-              {
-                sudahDibaca.length
-              }
-              )
+              <span className="block truncate">
+                Dibaca (
+                {
+                  sudahDibaca.length
+                }
+                )
+              </span>
             </button>
           </div>
 
@@ -1048,7 +1277,7 @@ export default function NotificationBell() {
               LIST
           =============================================== */}
 
-          <div className="max-h-80 overflow-y-auto">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
             {(refreshing ||
               loadingNotif) &&
             daftar.length ===
@@ -1063,7 +1292,7 @@ export default function NotificationBell() {
               </div>
             ) : daftar.length ===
               0 ? (
-              <div className="flex flex-col items-center py-10">
+              <div className="flex flex-col items-center px-5 py-10 text-center">
                 <p className="text-3xl opacity-30">
                   {tab ===
                   'baru'
@@ -1078,14 +1307,14 @@ export default function NotificationBell() {
                     : 'Belum ada notifikasi yang dibaca'}
                 </p>
 
+
                 {tab ===
                   'baru' && (
-                  <p className="mt-1 px-8 text-center text-[10px] leading-relaxed text-slate-300">
+                  <p className="mt-1 text-[10px] leading-relaxed text-slate-300">
                     Notifikasi
-                    actionable
-                    akan hilang
-                    otomatis ketika
-                    urusannya sudah
+                    actionable akan
+                    hilang otomatis
+                    ketika urusannya
                     selesai.
                   </p>
                 )}
@@ -1115,7 +1344,7 @@ export default function NotificationBell() {
                       key={
                         notif.id
                       }
-                      className={`group relative border-b border-slate-50 transition-all duration-300 ${
+                      className={`group relative border-b border-slate-100 transition-all duration-300 ${
                         hapusId ===
                         notif.id
                           ? 'translate-x-8 opacity-0'
@@ -1126,6 +1355,9 @@ export default function NotificationBell() {
                           'transform, opacity',
                       }}
                     >
+
+                      {/* ITEM */}
+
                       <button
                         type="button"
                         onClick={() =>
@@ -1133,7 +1365,7 @@ export default function NotificationBell() {
                             notif
                           )
                         }
-                        className={`flex w-full items-start gap-2.5 px-4 py-3 pr-11 text-left transition hover:bg-slate-50 ${
+                        className={`flex w-full items-start gap-2.5 px-3 py-3 pr-10 text-left transition hover:bg-slate-50 sm:px-4 sm:pr-11 ${
                           isActiveUnread(
                             notif
                           )
@@ -1141,9 +1373,10 @@ export default function NotificationBell() {
                             : ''
                         }`}
                       >
+
                         {/* ICON */}
 
-                        <span className="mt-0.5 shrink-0 text-lg">
+                        <span className="mt-0.5 shrink-0 text-base sm:text-lg">
                           {ikonUntuk(
                             notif
                           )}
@@ -1153,9 +1386,10 @@ export default function NotificationBell() {
                         {/* CONTENT */}
 
                         <div className="min-w-0 flex-1">
+
                           <div className="flex items-start justify-between gap-2">
                             <p
-                              className={`text-sm ${
+                              className={`min-w-0 break-words text-[13px] leading-snug sm:text-sm ${
                                 isActiveUnread(
                                   notif
                                 )
@@ -1172,20 +1406,20 @@ export default function NotificationBell() {
                             {isActiveUnread(
                               notif
                             ) && (
-                              <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-indigo-500" />
+                              <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-indigo-500" />
                             )}
                           </div>
 
 
-                          <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-slate-500">
+                          <p className="mt-1 line-clamp-2 break-words text-[11px] leading-relaxed text-slate-500 sm:text-xs">
                             {
                               notif.pesan
                             }
                           </p>
 
 
-                          <div className="mt-1 flex flex-wrap items-center gap-2">
-                            <p className="text-[10px] text-slate-400">
+                          <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <p className="text-[9px] text-slate-400 sm:text-[10px]">
                               {waktuRelatif(
                                 notif.created_at
                               )}
@@ -1193,7 +1427,7 @@ export default function NotificationBell() {
 
 
                             {rute && (
-                              <span className="text-[10px] font-bold text-indigo-400">
+                              <span className="text-[9px] font-bold text-indigo-500 sm:text-[10px]">
                                 {exactReview
                                   ? '→ buka tugas ini'
                                   : '→ lihat'}
@@ -1201,11 +1435,9 @@ export default function NotificationBell() {
                             )}
 
 
-                            {/* OPTIONAL STATUS HISTORY */}
-
                             {notif.read_at &&
                               notif.resolved_at && (
-                                <span className="rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold text-emerald-600">
+                                <span className="rounded-full bg-emerald-50 px-1.5 py-0.5 text-[8px] font-bold text-emerald-600 sm:text-[9px]">
                                   selesai
                                 </span>
                               )}
@@ -1214,9 +1446,7 @@ export default function NotificationBell() {
                       </button>
 
 
-                      {/* ===================================
-                          DELETE
-                      =================================== */}
+                      {/* DELETE */}
 
                       <button
                         type="button"
@@ -1229,13 +1459,13 @@ export default function NotificationBell() {
                             notif.id
                           );
                         }}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg bg-red-50 p-1.5 text-red-400 opacity-0 transition-all duration-200 hover:bg-red-100 hover:text-red-600 group-hover:opacity-100"
+                        className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg bg-red-50 text-red-400 opacity-100 transition-all duration-200 hover:bg-red-100 hover:text-red-600 sm:opacity-0 sm:group-hover:opacity-100"
                         title="Hapus notifikasi"
                         aria-label="Hapus notifikasi"
                       >
                         <svg
-                          width="14"
-                          height="14"
+                          width="13"
+                          height="13"
                           viewBox="0 0 24 24"
                           fill="none"
                           stroke="currentColor"
@@ -1268,7 +1498,7 @@ export default function NotificationBell() {
                 onClick={
                   hapusSemuaDibaca
                 }
-                className="w-full border-t border-slate-100 py-2.5 text-center text-[11px] font-semibold text-slate-400 transition hover:bg-red-50 hover:text-red-500"
+                className="shrink-0 border-t border-slate-100 px-3 py-2.5 text-center text-[10px] font-semibold text-slate-400 transition hover:bg-red-50 hover:text-red-500 sm:text-[11px]"
               >
                 Hapus semua
                 notifikasi yang
@@ -1276,7 +1506,72 @@ export default function NotificationBell() {
               </button>
             )}
         </div>
-      )}
-    </div>
+      </div>
+    ) : null;
+
+
+  /* =======================================================
+     UI
+  ======================================================= */
+
+  return (
+    <>
+      {/* ===================================================
+          BELL BUTTON
+      =================================================== */}
+
+      <button
+        ref={
+          triggerRef
+        }
+        type="button"
+        onClick={
+          toggleBell
+        }
+        className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-lg transition-all duration-200 hover:scale-105 hover:bg-slate-200 active:scale-95 ${
+          unread > 0
+            ? 'anim-wiggle'
+            : ''
+        }`}
+        title="Notifikasi"
+        aria-label={`Notifikasi${
+          unread > 0
+            ? `, ${unread} belum dibaca`
+            : ''
+        }`}
+        aria-expanded={
+          buka
+        }
+      >
+        {unread >
+        0
+          ? '🔔'
+          : '🔕'}
+
+
+        {unread >
+          0 && (
+          <span className="anim-pop absolute -right-0.5 -top-0.5 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-black text-white shadow">
+            {unread >
+            99
+              ? '99+'
+              : unread}
+          </span>
+        )}
+      </button>
+
+
+      {/* ===================================================
+          PORTAL
+
+          Panel keluar dari stacking context topbar.
+      =================================================== */}
+
+      {popover &&
+        createPortal(
+          popover,
+          document.body
+        )}
+    </>
   );
 }

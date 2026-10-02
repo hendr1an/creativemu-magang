@@ -1,58 +1,130 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { supabase } from '../../lib/supabaseClient';
+import {
+  useEffect,
+  useState,
+} from 'react';
 
-const HARI_INI = new Intl.DateTimeFormat('en-CA', {
-  timeZone: 'Asia/Jakarta',
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-}).format(new Date());
+import {
+  Link,
+} from 'react-router-dom';
+
+import {
+  supabase,
+} from '../../lib/supabaseClient';
+
+
+const HARI_INI =
+  new Intl.DateTimeFormat(
+    'en-CA',
+    {
+      timeZone:
+        'Asia/Jakarta',
+
+      year:
+        'numeric',
+
+      month:
+        '2-digit',
+
+      day:
+        '2-digit',
+    }
+  ).format(
+    new Date()
+  );
+
 
 const DIVISI_INFO = {
   Admin: {
-    icon: '📋',
-    title: 'Admin',
+    icon:
+      '📋',
+
+    title:
+      'Admin',
+
     description:
       'Cocok untuk kamu yang tertarik pada administrasi, pengelolaan data, dokumentasi, dan koordinasi operasional.',
   },
+
   Sosmed: {
-    icon: '📱',
-    title: 'Sosmed',
+    icon:
+      '📱',
+
+    title:
+      'Sosmed',
+
     description:
       'Cocok untuk kamu yang tertarik pada content creation, desain, copywriting, video, dan pengelolaan media sosial.',
   },
+
   Marketplace: {
-    icon: '🛒',
-    title: 'Marketplace',
+    icon:
+      '🛒',
+
+    title:
+      'Marketplace',
+
     description:
       'Cocok untuk kamu yang tertarik pada e-commerce, pengelolaan produk, promosi, dan digital marketing.',
   },
+
   'Web Developer': {
-    icon: '💻',
-    title: 'Web Developer',
+    icon:
+      '💻',
+
+    title:
+      'Web Developer',
+
     description:
       'Cocok untuk kamu yang tertarik pada coding, website, UI web, dan pengembangan aplikasi.',
   },
 };
 
-function formatTanggalIndonesia(value) {
-  if (!value) return '';
 
-  const [tahun, bulan, tanggal] = value
-    .split('-')
-    .map(Number);
+function formatTanggalIndonesia(
+  value
+) {
+  if (!value) {
+    return '';
+  }
 
-  if (!tahun || !bulan || !tanggal) {
+
+  const [
+    tahun,
+    bulan,
+    tanggal,
+  ] =
+    value
+      .split('-')
+      .map(
+        Number
+      );
+
+
+  if (
+    !tahun ||
+    !bulan ||
+    !tanggal
+  ) {
     return value;
   }
 
-  return new Intl.DateTimeFormat('id-ID', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'Asia/Jakarta',
-  }).format(
+
+  return new Intl.DateTimeFormat(
+    'id-ID',
+    {
+      day:
+        'numeric',
+
+      month:
+        'long',
+
+      year:
+        'numeric',
+
+      timeZone:
+        'Asia/Jakarta',
+    }
+  ).format(
     new Date(
       Date.UTC(
         tahun,
@@ -63,169 +135,349 @@ function formatTanggalIndonesia(value) {
   );
 }
 
+
 export default function Register() {
-  const [form, setForm] = useState({
-    nama_lengkap: '',
-    email: '',
-    nomor_whatsapp: '',
-    instansi: '',
-    divisi: '',
-    portofolio_url: '',
-    tanggal_mulai: '',
-    durasi_magang: 1,
-    satuan: 'bulan',
-    tanggal_selesai_custom: '',
-  });
+  const [
+    form,
+    setForm,
+  ] =
+    useState({
+      nama_lengkap:
+        '',
 
-  const [cvFile, setCvFile] =
-    useState(null);
+      email:
+        '',
 
-  const [quota, setQuota] =
-    useState(null);
+      nomor_whatsapp:
+        '',
 
-  const [quotaLoading, setQuotaLoading] =
-    useState(false);
+      instansi:
+        '',
 
-  const [submitting, setSubmitting] =
-    useState(false);
+      jurusan:
+        '',
 
-  const [feedback, setFeedback] =
-    useState(null);
+      divisi:
+        '',
 
-  const [sukses, setSukses] =
-    useState(false);
+      portofolio_url:
+        '',
 
-  const update = (field, value) => {
-    setForm((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
+      tanggal_mulai:
+        '',
 
-  useEffect(() => {
-    if (
-      !form.tanggal_mulai ||
-      !form.divisi
-    ) {
-      setQuota(null);
-      return;
-    }
+      durasi_magang:
+        1,
 
-    let aktif = true;
+      satuan:
+        'bulan',
 
-    async function cekQuota() {
-      setQuotaLoading(true);
+      tanggal_selesai_custom:
+        '',
+    });
 
-      const {
-        data: cek,
-        error: cekErr,
-      } =
-        await supabase.functions.invoke(
-          'check-quota',
-          {
-            body: {
-              tanggal_mulai:
-                form.tanggal_mulai,
 
-              durasi: Number(
-                form.durasi_magang
-              ),
+  const [
+    cvFile,
+    setCvFile,
+  ] =
+    useState(
+      null
+    );
 
-              satuan:
-                form.satuan,
 
-              tanggal_selesai:
-                form.tanggal_selesai_custom ||
-                undefined,
+  const [
+    quota,
+    setQuota,
+  ] =
+    useState(
+      null
+    );
 
-              divisi:
-                form.divisi,
-            },
-          }
+
+  const [
+    quotaLoading,
+    setQuotaLoading,
+  ] =
+    useState(
+      false
+    );
+
+
+  const [
+    submitting,
+    setSubmitting,
+  ] =
+    useState(
+      false
+    );
+
+
+  const [
+    feedback,
+    setFeedback,
+  ] =
+    useState(
+      null
+    );
+
+
+  const [
+    sukses,
+    setSukses,
+  ] =
+    useState(
+      false
+    );
+
+
+  const update =
+    (
+      field,
+      value
+    ) => {
+      setForm(
+        (
+          prev
+        ) => ({
+          ...prev,
+
+          [field]:
+            value,
+        })
+      );
+    };
+
+
+  /* =======================================================
+     CEK QUOTA
+  ======================================================= */
+
+  useEffect(
+    () => {
+      if (
+        !form.tanggal_mulai ||
+        !form.divisi
+      ) {
+        setQuota(
+          null
         );
 
-      if (!aktif) {
         return;
       }
 
-      setQuotaLoading(false);
 
-      if (cekErr) {
-        setQuota({
-          error: true,
-          message:
-            'Gagal memeriksa kuota.',
-        });
+      let aktif =
+        true;
 
-        return;
+
+      async function cekQuota() {
+        setQuotaLoading(
+          true
+        );
+
+
+        const {
+          data:
+            cek,
+
+          error:
+            cekErr,
+        } =
+          await supabase.functions.invoke(
+            'check-quota',
+            {
+              body: {
+                tanggal_mulai:
+                  form.tanggal_mulai,
+
+                durasi:
+                  Number(
+                    form.durasi_magang
+                  ),
+
+                satuan:
+                  form.satuan,
+
+                tanggal_selesai:
+                  form.tanggal_selesai_custom ||
+                  undefined,
+
+                divisi:
+                  form.divisi,
+              },
+            }
+          );
+
+
+        if (!aktif) {
+          return;
+        }
+
+
+        setQuotaLoading(
+          false
+        );
+
+
+        if (
+          cekErr
+        ) {
+          setQuota({
+            error:
+              true,
+
+            message:
+              'Gagal memeriksa kuota.',
+          });
+
+          return;
+        }
+
+
+        setQuota(
+          cek
+        );
       }
 
-      setQuota(cek);
-    }
 
-    cekQuota();
+      cekQuota();
 
-    return () => {
-      aktif = false;
-    };
-  }, [
-    form.tanggal_mulai,
-    form.durasi_magang,
-    form.satuan,
-    form.tanggal_selesai_custom,
-    form.divisi,
-  ]);
 
-  function pilihCv(e) {
+      return () => {
+        aktif =
+          false;
+      };
+    },
+    [
+      form.tanggal_mulai,
+      form.durasi_magang,
+      form.satuan,
+      form.tanggal_selesai_custom,
+      form.divisi,
+    ]
+  );
+
+
+  /* =======================================================
+     PILIH CV
+  ======================================================= */
+
+  function pilihCv(
+    e
+  ) {
     const file =
-      e.target.files?.[0] ?? null;
+      e.target.files?.[0] ??
+      null;
+
 
     if (!file) {
       return;
     }
 
+
     const nama =
       file.name.toLowerCase();
 
-    if (!nama.endsWith('.pdf')) {
-      setCvFile(null);
+
+    if (
+      !nama.endsWith(
+        '.pdf'
+      )
+    ) {
+      setCvFile(
+        null
+      );
+
 
       setFeedback({
-        type: 'error',
+        type:
+          'error',
+
         text:
           'CV / Resume harus berformat PDF.',
       });
 
+
       return;
     }
 
+
     if (
       file.size >
-      5 * 1024 * 1024
+      5 *
+        1024 *
+        1024
     ) {
-      setCvFile(null);
+      setCvFile(
+        null
+      );
+
 
       setFeedback({
-        type: 'error',
+        type:
+          'error',
+
         text:
           'Ukuran CV / Resume maksimal 5 MB.',
+      });
+
+
+      return;
+    }
+
+
+    setFeedback(
+      null
+    );
+
+    setCvFile(
+      file
+    );
+  }
+
+
+  /* =======================================================
+     SUBMIT
+  ======================================================= */
+
+  async function handleSubmit(
+    e
+  ) {
+    e.preventDefault();
+
+
+    setFeedback(
+      null
+    );
+
+
+    /* =====================================================
+       VALIDASI JURUSAN
+    ===================================================== */
+
+    if (
+      !form.jurusan.trim()
+    ) {
+      setFeedback({
+        type:
+          'error',
+
+        text:
+          'Jurusan / Program Studi wajib diisi.',
       });
 
       return;
     }
 
-    setFeedback(null);
-    setCvFile(file);
-  }
 
-  async function handleSubmit(e) {
-    e.preventDefault();
-
-    setFeedback(null);
-
-    if (!form.divisi) {
+    if (
+      !form.divisi
+    ) {
       setFeedback({
-        type: 'error',
+        type:
+          'error',
+
         text:
           'Pilih divisi yang diminati.',
       });
@@ -233,9 +485,14 @@ export default function Register() {
       return;
     }
 
-    if (!cvFile) {
+
+    if (
+      !cvFile
+    ) {
       setFeedback({
-        type: 'error',
+        type:
+          'error',
+
         text:
           'Lampirkan CV / Resume dalam format PDF.',
       });
@@ -243,11 +500,13 @@ export default function Register() {
       return;
     }
 
+
     const nomorBersih =
       form.nomor_whatsapp.replace(
         /[\s-]/g,
         ''
       );
+
 
     if (
       !/^(\+?62|0)8\d{7,12}$/.test(
@@ -255,7 +514,9 @@ export default function Register() {
       )
     ) {
       setFeedback({
-        type: 'error',
+        type:
+          'error',
+
         text:
           'Nomor WhatsApp tidak valid. Contoh: 081234567890.',
       });
@@ -263,16 +524,23 @@ export default function Register() {
       return;
     }
 
-    setSubmitting(true);
+
+    setSubmitting(
+      true
+    );
+
 
     try {
-      // ==================================================
-      // CEK ULANG KUOTA SAAT SUBMIT
-      // ==================================================
+      /* ==================================================
+         CEK ULANG QUOTA
+      ================================================== */
 
       const {
-        data: cek,
-        error: cekErr,
+        data:
+          cek,
+
+        error:
+          cekErr,
       } =
         await supabase.functions.invoke(
           'check-quota',
@@ -281,9 +549,10 @@ export default function Register() {
               tanggal_mulai:
                 form.tanggal_mulai,
 
-              durasi: Number(
-                form.durasi_magang
-              ),
+              durasi:
+                Number(
+                  form.durasi_magang
+                ),
 
               satuan:
                 form.satuan,
@@ -298,22 +567,33 @@ export default function Register() {
           }
         );
 
-      if (cekErr) {
+
+      if (
+        cekErr
+      ) {
         throw new Error(
           'Gagal memeriksa kuota. Periksa koneksi internet lalu coba lagi.'
         );
       }
 
-      if (cek?.error) {
+
+      if (
+        cek?.error
+      ) {
         throw new Error(
           cek.message ??
             'Gagal memeriksa kuota.'
         );
       }
 
-      if (!cek?.tersedia) {
+
+      if (
+        !cek?.tersedia
+      ) {
         const detail =
-          cek?.detail_bulan ?? [];
+          cek?.detail_bulan ??
+          [];
+
 
         if (
           cek?.tersedia_total ===
@@ -322,13 +602,18 @@ export default function Register() {
           const bulanPenuh =
             detail
               .filter(
-                (m) =>
+                (
+                  m
+                ) =>
                   m.total_penuh
               )
               .map(
-                (m) =>
+                (
+                  m
+                ) =>
                   m.bulan
               );
+
 
           throw new Error(
             `Kuota total magang penuh pada ${bulanPenuh.join(
@@ -337,6 +622,7 @@ export default function Register() {
           );
         }
 
+
         if (
           cek?.tersedia_divisi ===
           false
@@ -344,13 +630,18 @@ export default function Register() {
           const bulanPenuh =
             detail
               .filter(
-                (m) =>
+                (
+                  m
+                ) =>
                   m.divisi_penuh
               )
               .map(
-                (m) =>
+                (
+                  m
+                ) =>
                   m.bulan
               );
+
 
           throw new Error(
             `Kuota divisi ${form.divisi} penuh pada ${bulanPenuh.join(
@@ -359,14 +650,16 @@ export default function Register() {
           );
         }
 
+
         throw new Error(
           'Kuota magang untuk periode ini tidak tersedia.'
         );
       }
 
-      // ==================================================
-      // UPLOAD CV
-      // ==================================================
+
+      /* ==================================================
+         UPLOAD CV
+      ================================================== */
 
       const ext =
         cvFile.name
@@ -374,40 +667,57 @@ export default function Register() {
           .pop()
           .toLowerCase();
 
+
       const path =
         `applications/` +
         `${Date.now()}-` +
         `${Math.random()
-          .toString(36)
-          .slice(2, 8)}.` +
+          .toString(
+            36
+          )
+          .slice(
+            2,
+            8
+          )}.` +
         `${ext}`;
 
+
       const {
-        error: upErr,
+        error:
+          upErr,
       } =
         await supabase.storage
-          .from('intern-files')
+          .from(
+            'intern-files'
+          )
           .upload(
             path,
             cvFile
           );
 
-      if (upErr) {
+
+      if (
+        upErr
+      ) {
         throw new Error(
           'Gagal mengunggah CV: ' +
             upErr.message
         );
       }
 
-      // ==================================================
-      // SIMPAN PENDAFTARAN
-      // ==================================================
+
+      /* ==================================================
+         SIMPAN PENDAFTARAN
+      ================================================== */
 
       const {
-        error: insErr,
+        error:
+          insErr,
       } =
         await supabase
-          .from('applications')
+          .from(
+            'applications'
+          )
           .insert({
             nama_lengkap:
               form.nama_lengkap.trim(),
@@ -422,6 +732,9 @@ export default function Register() {
 
             instansi:
               form.instansi.trim(),
+
+            jurusan:
+              form.jurusan.trim(),
 
             divisi:
               form.divisi,
@@ -452,7 +765,10 @@ export default function Register() {
               'Pending',
           });
 
-      if (insErr) {
+
+      if (
+        insErr
+      ) {
         if (
           insErr.code ===
           '23505'
@@ -462,34 +778,54 @@ export default function Register() {
           );
         }
 
+
         throw new Error(
           'Gagal menyimpan pendaftaran: ' +
             insErr.message
         );
       }
 
-      setSukses(true);
-    } catch (err) {
+
+      setSukses(
+        true
+      );
+    } catch (
+      err
+    ) {
       setFeedback({
-        type: 'error',
+        type:
+          'error',
+
         text:
           err?.message ??
           'Terjadi kesalahan saat mengirim pendaftaran.',
       });
     } finally {
-      setSubmitting(false);
+      setSubmitting(
+        false
+      );
     }
   }
+
 
   const selesaiEfektif =
     quota?.tanggal_selesai;
 
+
   const divisiAktif =
     DIVISI_INFO[
       form.divisi
-    ] ?? null;
+    ] ??
+    null;
 
-  if (sukses) {
+
+  /* =======================================================
+     SUKSES
+  ======================================================= */
+
+  if (
+    sukses
+  ) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
         <div className="anim-pop w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm sm:p-10">
@@ -508,9 +844,11 @@ export default function Register() {
             </svg>
           </div>
 
+
           <h2 className="mt-6 text-xl font-semibold text-slate-900">
             Pendaftaran Terkirim
           </h2>
+
 
           <p className="mt-3 text-sm leading-relaxed text-slate-500">
             Pengajuanmu sudah kami
@@ -520,6 +858,7 @@ export default function Register() {
             setelah proses seleksi.
           </p>
 
+
           <p className="mt-3 rounded-xl bg-slate-50 px-4 py-3 text-xs leading-relaxed text-slate-500">
             Pastikan nomor WhatsApp dan
             email yang kamu masukkan
@@ -527,6 +866,7 @@ export default function Register() {
             hasil seleksi tidak
             terlewat.
           </p>
+
 
           <Link
             to="/login"
@@ -538,6 +878,11 @@ export default function Register() {
       </div>
     );
   }
+
+
+  /* =======================================================
+     FORM
+  ======================================================= */
 
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-10 sm:py-12">
@@ -554,9 +899,11 @@ export default function Register() {
             className="mx-auto h-10 w-auto"
           />
 
+
           <h1 className="mt-6 text-2xl font-semibold tracking-tight text-slate-900">
             Daftar Magang
           </h1>
+
 
           <p className="mt-2 text-sm leading-relaxed text-slate-500">
             Isi formulir berikut untuk
@@ -565,8 +912,9 @@ export default function Register() {
           </p>
         </div>
 
+
         {/* =========================================
-            INFO SEBELUM MENDAFTAR
+            INFO
         ========================================= */}
 
         <div className="anim-up mt-6 rounded-2xl border border-purple-100 bg-purple-50/70 p-5 [animation-delay:70ms]">
@@ -574,35 +922,43 @@ export default function Register() {
             📎 Sebelum mendaftar
           </p>
 
+
           <p className="mt-2 text-xs leading-relaxed text-purple-700">
-            Siapkan data diri, periode
+            Siapkan data diri, informasi
+            sekolah / kampus, periode
             magang, dan CV / Resume dalam
             format PDF. Portofolio dapat
             dilampirkan melalui link jika
             tersedia.
           </p>
 
+
           <div className="mt-4 rounded-xl border border-purple-100 bg-white/80 p-4">
             <p className="text-xs font-bold text-slate-700">
-              🎓 Untuk siswa SMA / SMK
+              🎓 Siswa / Mahasiswa
             </p>
 
+
             <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
-              Kamu tetap boleh mendaftar
-              meskipun belum memiliki
-              pengalaman kerja. CV dapat
-              berisi jurusan, kemampuan,
-              organisasi, project sekolah,
-              sertifikat, prestasi, atau
-              karya pribadi yang pernah
-              dibuat.
+              Isi asal sekolah atau
+              kampus beserta jurusan /
+              program studi yang sedang
+              ditempuh. Contohnya
+              Rekayasa Perangkat Lunak,
+              Teknik Komputer dan
+              Jaringan, Teknologi
+              Informasi, Sistem
+              Informasi, Manajemen, dan
+              lainnya.
             </p>
           </div>
+
 
           <div className="mt-3 rounded-xl border border-purple-100 bg-white/80 p-4">
             <p className="text-xs font-bold text-slate-700">
               🏫 Surat Pengantar
             </p>
+
 
             <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
               Jika sekolah atau kampusmu
@@ -616,12 +972,15 @@ export default function Register() {
           </div>
         </div>
 
+
         {/* =========================================
-            FORM
+            FORM CARD
         ========================================= */}
 
         <form
-          onSubmit={handleSubmit}
+          onSubmit={
+            handleSubmit
+          }
           className="anim-up mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 [animation-delay:100ms]"
         >
 
@@ -630,10 +989,13 @@ export default function Register() {
           {feedback && (
             <div className="anim-down mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
               <p className="text-sm font-medium leading-relaxed text-red-600">
-                {feedback.text}
+                {
+                  feedback.text
+                }
               </p>
             </div>
           )}
+
 
           <div className="space-y-5">
 
@@ -647,15 +1009,23 @@ export default function Register() {
               </p>
             </div>
 
+
+            {/* NAMA */}
+
             <div>
               <label className="text-sm font-medium text-slate-700">
                 Nama Lengkap
               </label>
 
+
               <input
                 required
-                value={form.nama_lengkap}
-                onChange={(e) =>
+                value={
+                  form.nama_lengkap
+                }
+                onChange={(
+                  e
+                ) =>
                   update(
                     'nama_lengkap',
                     e.target.value
@@ -666,16 +1036,24 @@ export default function Register() {
               />
             </div>
 
+
+            {/* EMAIL */}
+
             <div>
               <label className="text-sm font-medium text-slate-700">
                 Email
               </label>
 
+
               <input
                 type="email"
                 required
-                value={form.email}
-                onChange={(e) =>
+                value={
+                  form.email
+                }
+                onChange={(
+                  e
+                ) =>
                   update(
                     'email',
                     e.target.value
@@ -685,6 +1063,7 @@ export default function Register() {
                 placeholder="nama@email.com"
               />
 
+
               <p className="mt-1.5 text-xs text-slate-400">
                 Gunakan email yang aktif
                 karena informasi akun
@@ -693,10 +1072,14 @@ export default function Register() {
               </p>
             </div>
 
+
+            {/* WHATSAPP */}
+
             <div>
               <label className="text-sm font-medium text-slate-700">
                 Nomor WhatsApp
               </label>
+
 
               <input
                 required
@@ -704,7 +1087,9 @@ export default function Register() {
                 value={
                   form.nomor_whatsapp
                 }
-                onChange={(e) =>
+                onChange={(
+                  e
+                ) =>
                   update(
                     'nomor_whatsapp',
                     e.target.value
@@ -714,21 +1099,41 @@ export default function Register() {
                 placeholder="08xxxxxxxxxx"
               />
 
+
               <p className="mt-1.5 text-xs text-slate-400">
                 Pastikan nomor dapat
                 menerima WhatsApp.
               </p>
             </div>
 
+
+            {/* =====================================
+                PENDIDIKAN
+            ===================================== */}
+
+            <div className="border-t border-slate-100 pt-5">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                Pendidikan
+              </p>
+            </div>
+
+
+            {/* INSTANSI */}
+
             <div>
               <label className="text-sm font-medium text-slate-700">
                 Asal Instansi
               </label>
 
+
               <input
                 required
-                value={form.instansi}
-                onChange={(e) =>
+                value={
+                  form.instansi
+                }
+                onChange={(
+                  e
+                ) =>
                   update(
                     'instansi',
                     e.target.value
@@ -737,7 +1142,50 @@ export default function Register() {
                 className="mt-1.5 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-[#9647FE] focus:ring-2 focus:ring-purple-200"
                 placeholder="Contoh: SMK Negeri 1 ... / Universitas ..."
               />
+
+
+              <p className="mt-1.5 text-xs leading-relaxed text-slate-400">
+                Isi nama sekolah,
+                universitas, atau kampus
+                tempat kamu belajar.
+              </p>
             </div>
+
+
+            {/* JURUSAN */}
+
+            <div>
+              <label className="text-sm font-medium text-slate-700">
+                Jurusan / Program Studi
+              </label>
+
+
+              <input
+                required
+                value={
+                  form.jurusan
+                }
+                onChange={(
+                  e
+                ) =>
+                  update(
+                    'jurusan',
+                    e.target.value
+                  )
+                }
+                className="mt-1.5 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-[#9647FE] focus:ring-2 focus:ring-purple-200"
+                placeholder="Contoh: Rekayasa Perangkat Lunak / Teknologi Informasi"
+              />
+
+
+              <p className="mt-1.5 text-xs leading-relaxed text-slate-400">
+                Untuk siswa, isi jurusan
+                sekolah. Untuk mahasiswa,
+                isi program studi yang
+                sedang ditempuh.
+              </p>
+            </div>
+
 
             {/* =====================================
                 DIVISI
@@ -748,10 +1196,15 @@ export default function Register() {
                 Divisi yang Diminati
               </label>
 
+
               <select
                 required
-                value={form.divisi}
-                onChange={(e) =>
+                value={
+                  form.divisi
+                }
+                onChange={(
+                  e
+                ) =>
                   update(
                     'divisi',
                     e.target.value
@@ -763,29 +1216,40 @@ export default function Register() {
                   Pilih divisi...
                 </option>
 
+
                 <option value="Admin">
                   Admin — Administrasi & Operasional
                 </option>
+
 
                 <option value="Sosmed">
                   Sosmed — Social Media & Content
                 </option>
 
+
                 <option value="Marketplace">
                   Marketplace — E-commerce & Digital Marketing
                 </option>
+
 
                 <option value="Web Developer">
                   Web Developer — Website & Programming
                 </option>
               </select>
 
+
               {divisiAktif ? (
                 <div className="mt-3 rounded-xl border border-purple-100 bg-purple-50 p-3">
                   <p className="text-xs font-bold text-purple-700">
-                    {divisiAktif.icon}{' '}
-                    {divisiAktif.title}
+                    {
+                      divisiAktif.icon
+                    }{' '}
+
+                    {
+                      divisiAktif.title
+                    }
                   </p>
+
 
                   <p className="mt-1 text-[11px] leading-relaxed text-purple-600">
                     {
@@ -802,21 +1266,26 @@ export default function Register() {
               )}
             </div>
 
+
             {/* PORTOFOLIO */}
 
             <div>
               <label className="text-sm font-medium text-slate-700">
                 Link Portofolio{' '}
+
                 <span className="font-normal text-slate-400">
                   (opsional)
                 </span>
               </label>
 
+
               <input
                 value={
                   form.portofolio_url
                 }
-                onChange={(e) =>
+                onChange={(
+                  e
+                ) =>
                   update(
                     'portofolio_url',
                     e.target.value
@@ -826,12 +1295,14 @@ export default function Register() {
                 placeholder="GitHub, Behance, Google Drive, Instagram, dll."
               />
 
+
               <p className="mt-1.5 text-xs leading-relaxed text-slate-400">
                 Jika belum memiliki
                 portofolio, bagian ini
                 boleh dikosongkan.
               </p>
             </div>
+
 
             {/* =====================================
                 PERIODE MAGANG
@@ -843,19 +1314,27 @@ export default function Register() {
               </p>
             </div>
 
+
+            {/* TANGGAL MULAI */}
+
             <div>
               <label className="text-sm font-medium text-slate-700">
                 Tanggal Mulai
               </label>
 
+
               <input
                 type="date"
                 required
-                min={HARI_INI}
+                min={
+                  HARI_INI
+                }
                 value={
                   form.tanggal_mulai
                 }
-                onChange={(e) =>
+                onChange={(
+                  e
+                ) =>
                   update(
                     'tanggal_mulai',
                     e.target.value
@@ -865,21 +1344,28 @@ export default function Register() {
               />
             </div>
 
+
+            {/* DURASI */}
+
             <div>
               <label className="text-sm font-medium text-slate-700">
                 Durasi
               </label>
+
 
               <div className="mt-1.5 flex gap-2">
                 <select
                   value={
                     form.satuan
                   }
-                  onChange={(e) => {
+                  onChange={(
+                    e
+                  ) => {
                     update(
                       'satuan',
                       e.target.value
                     );
+
 
                     update(
                       'durasi_magang',
@@ -897,11 +1383,14 @@ export default function Register() {
                   </option>
                 </select>
 
+
                 <select
                   value={
                     form.durasi_magang
                   }
-                  onChange={(e) =>
+                  onChange={(
+                    e
+                  ) =>
                     update(
                       'durasi_magang',
                       Number(
@@ -919,25 +1408,44 @@ export default function Register() {
                           ? 26
                           : 6,
                     },
-                    (_, i) =>
+
+                    (
+                      _,
+                      i
+                    ) =>
                       i + 1
-                  ).map((n) => (
-                    <option
-                      key={n}
-                      value={n}
-                    >
-                      {n}{' '}
-                      {form.satuan}
-                    </option>
-                  ))}
+                  ).map(
+                    (
+                      n
+                    ) => (
+                      <option
+                        key={
+                          n
+                        }
+                        value={
+                          n
+                        }
+                      >
+                        {
+                          n
+                        }{' '}
+
+                        {
+                          form.satuan
+                        }
+                      </option>
+                    )
+                  )}
                 </select>
               </div>
+
 
               {form.tanggal_mulai &&
                 !form.tanggal_selesai_custom &&
                 selesaiEfektif && (
                   <p className="mt-2 text-xs text-slate-400">
                     Berakhir otomatis:{' '}
+
                     {formatTanggalIndonesia(
                       selesaiEfektif
                     )}
@@ -945,13 +1453,18 @@ export default function Register() {
                 )}
             </div>
 
+
+            {/* TANGGAL SELESAI KHUSUS */}
+
             <div>
               <label className="text-sm font-medium text-slate-700">
                 Tanggal Selesai Khusus{' '}
+
                 <span className="font-normal text-slate-400">
                   (opsional)
                 </span>
               </label>
+
 
               <input
                 type="date"
@@ -962,7 +1475,9 @@ export default function Register() {
                   form.tanggal_mulai ||
                   HARI_INI
                 }
-                onChange={(e) =>
+                onChange={(
+                  e
+                ) =>
                   update(
                     'tanggal_selesai_custom',
                     e.target.value
@@ -970,6 +1485,7 @@ export default function Register() {
                 }
                 className="mt-1.5 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-[#9647FE] focus:ring-2 focus:ring-purple-200"
               />
+
 
               <p className="mt-1.5 text-xs leading-relaxed text-slate-400">
                 Gunakan jika sekolah /
@@ -981,6 +1497,7 @@ export default function Register() {
               </p>
             </div>
 
+
             {/* =====================================
                 DOKUMEN
             ===================================== */}
@@ -991,10 +1508,14 @@ export default function Register() {
               </p>
             </div>
 
+
+            {/* CV */}
+
             <div>
               <label className="text-sm font-medium text-slate-700">
                 CV / Resume
               </label>
+
 
               <label
                 className={`mt-1.5 flex cursor-pointer items-center justify-between rounded-lg border-2 px-4 py-4 transition ${
@@ -1019,7 +1540,9 @@ export default function Register() {
                     strokeLinejoin="round"
                   >
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+
                     <polyline points="17 8 12 3 7 8" />
+
                     <line
                       x1="12"
                       y1="3"
@@ -1027,6 +1550,7 @@ export default function Register() {
                       y2="15"
                     />
                   </svg>
+
 
                   <div className="min-w-0">
                     <p
@@ -1041,11 +1565,13 @@ export default function Register() {
                         : 'Unggah CV / Resume'}
                     </p>
 
+
                     <p className="mt-0.5 text-[10px] text-slate-400">
                       PDF · maksimal 5 MB
                     </p>
                   </div>
                 </div>
+
 
                 {cvFile && (
                   <svg
@@ -1061,30 +1587,38 @@ export default function Register() {
                   </svg>
                 )}
 
+
                 <input
                   type="file"
                   accept="application/pdf,.pdf"
-                  onChange={pilihCv}
+                  onChange={
+                    pilihCv
+                  }
                   className="hidden"
                 />
               </label>
+
 
               <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2.5">
                 <p className="text-[10px] leading-relaxed text-slate-500">
                   <b>
                     Belum pernah bekerja?
                   </b>{' '}
+
                   Tidak masalah. CV untuk
-                  siswa dapat berisi
-                  pendidikan, jurusan,
-                  skill, pengalaman
-                  organisasi, project
-                  sekolah, pelatihan,
+                  siswa / mahasiswa dapat
+                  berisi pendidikan,
+                  jurusan / program
+                  studi, skill,
+                  pengalaman organisasi,
+                  project sekolah /
+                  kampus, pelatihan,
                   sertifikat, atau
                   prestasi.
                 </p>
               </div>
             </div>
+
 
             {/* =====================================
                 QUOTA
@@ -1094,10 +1628,15 @@ export default function Register() {
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
                 <p className="text-xs font-medium text-slate-500">
                   Memeriksa kuota{' '}
-                  {form.divisi}...
+
+                  {
+                    form.divisi
+                  }
+                  ...
                 </p>
               </div>
             )}
+
 
             {quota?.error && (
               <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
@@ -1106,12 +1645,14 @@ export default function Register() {
                   diperiksa
                 </p>
 
+
                 <p className="mt-1 text-xs text-amber-600">
                   {quota.message ??
                     'Silakan coba lagi beberapa saat.'}
                 </p>
               </div>
             )}
+
 
             {quota &&
               !quota.error &&
@@ -1139,6 +1680,7 @@ export default function Register() {
                         : `Kuota divisi ${form.divisi} penuh`}
                   </p>
 
+
                   {!quota.tersedia &&
                     quota.tersedia_divisi ===
                       false &&
@@ -1153,9 +1695,12 @@ export default function Register() {
                       </p>
                     )}
 
+
                   <div className="mt-3 space-y-3">
                     {quota.detail_bulan?.map(
-                      (m) => (
+                      (
+                        m
+                      ) => (
                         <div
                           key={
                             m.bulan
@@ -1169,6 +1714,7 @@ export default function Register() {
                               }
                             </span>
 
+
                             <span className="text-[11px] text-slate-400">
                               {
                                 m.divisi
@@ -1176,14 +1722,15 @@ export default function Register() {
                             </span>
                           </div>
 
+
                           {/* TOTAL */}
 
                           <div className="mt-3">
                             <div className="flex justify-between text-[11px]">
                               <span className="text-slate-500">
-                                Total
-                                peserta
+                                Total peserta
                               </span>
+
 
                               <span
                                 className={
@@ -1202,6 +1749,7 @@ export default function Register() {
                               </span>
                             </div>
 
+
                             <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-100">
                               <div
                                 className={`h-full rounded-full ${
@@ -1210,19 +1758,24 @@ export default function Register() {
                                     : 'bg-green-400'
                                 }`}
                                 style={{
-                                  width: `${Math.min(
-                                    m.total_kuota >
-                                      0
-                                      ? (m.total_terisi /
-                                          m.total_kuota) *
+                                  width:
+                                    `${Math.min(
+                                      m.total_kuota >
+                                        0
+                                        ? (
+                                            m.total_terisi /
+                                            m.total_kuota
+                                          ) *
                                           100
-                                      : 100,
-                                    100
-                                  )}%`,
+                                        : 100,
+
+                                      100
+                                    )}%`,
                                 }}
                               />
                             </div>
                           </div>
+
 
                           {/* DIVISI */}
 
@@ -1230,10 +1783,12 @@ export default function Register() {
                             <div className="flex justify-between text-[11px]">
                               <span className="text-slate-500">
                                 Divisi{' '}
+
                                 {
                                   m.divisi
                                 }
                               </span>
+
 
                               <span
                                 className={
@@ -1252,6 +1807,7 @@ export default function Register() {
                               </span>
                             </div>
 
+
                             <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-100">
                               <div
                                 className={`h-full rounded-full ${
@@ -1260,15 +1816,19 @@ export default function Register() {
                                     : 'bg-[#9647FE]'
                                 }`}
                                 style={{
-                                  width: `${Math.min(
-                                    m.divisi_kuota >
-                                      0
-                                      ? (m.divisi_terisi /
-                                          m.divisi_kuota) *
+                                  width:
+                                    `${Math.min(
+                                      m.divisi_kuota >
+                                        0
+                                        ? (
+                                            m.divisi_terisi /
+                                            m.divisi_kuota
+                                          ) *
                                           100
-                                      : 100,
-                                    100
-                                  )}%`,
+                                        : 100,
+
+                                      100
+                                    )}%`,
                                 }}
                               />
                             </div>
@@ -1280,6 +1840,7 @@ export default function Register() {
                 </div>
               )}
 
+
             {/* =====================================
                 KONFIRMASI
             ===================================== */}
@@ -1289,8 +1850,9 @@ export default function Register() {
                 Dengan mengirim formulir
                 ini, pastikan nama,
                 nomor WhatsApp, email,
-                instansi, divisi, dan
-                periode magang sudah
+                instansi, jurusan /
+                program studi, divisi,
+                dan periode magang sudah
                 benar. Data tersebut akan
                 digunakan dalam proses
                 seleksi dan pembuatan akun
@@ -1298,6 +1860,7 @@ export default function Register() {
                 disetujui.
               </p>
             </div>
+
 
             {/* SUBMIT */}
 
@@ -1324,8 +1887,10 @@ export default function Register() {
           </div>
         </form>
 
+
         <p className="mt-6 text-center text-sm text-slate-500">
           Sudah punya akun?{' '}
+
           <Link
             to="/login"
             className="font-semibold text-[#9647FE] hover:underline"

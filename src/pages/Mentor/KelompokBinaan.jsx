@@ -1,23 +1,41 @@
-import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { supabase } from '../../lib/supabaseClient';
-import { useMentor } from '../../hooks/useMentor';
+import {
+  useEffect,
+  useState,
+} from 'react';
+
+import {
+  useSearchParams,
+} from 'react-router-dom';
+
+import {
+  supabase,
+} from '../../lib/supabaseClient';
+
+import {
+  useMentor,
+} from '../../hooks/useMentor';
+
 import SubtaskManager from '../../components/SubtaskManager';
 import RadarNilai from '../../components/RadarNilai';
-import { fmtTanggal } from '../../lib/format';
 import Modal from '../../components/Modal';
 
-const HARI_INI = new Intl.DateTimeFormat('en-CA', {
-  timeZone: 'Asia/Jakarta',
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-}).format(new Date());
+import {
+  fmtTanggal,
+} from '../../lib/format';
 
-function fmtTanggalLogbook(tanggal) {
-  if (!tanggal) return '—';
 
-  const [tahun, bulan, hari] =
+function fmtTanggalLogbook(
+  tanggal
+) {
+  if (!tanggal) {
+    return '—';
+  }
+
+  const [
+    tahun,
+    bulan,
+    hari,
+  ] =
     tanggal
       .split('-')
       .map(Number);
@@ -25,9 +43,15 @@ function fmtTanggalLogbook(tanggal) {
   return new Intl.DateTimeFormat(
     'id-ID',
     {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
+      day:
+        'numeric',
+
+      month:
+        'short',
+
+      year:
+        'numeric',
+
       timeZone:
         'Asia/Jakarta',
     }
@@ -42,134 +66,251 @@ function fmtTanggalLogbook(tanggal) {
   );
 }
 
+
+function inisial(
+  nama
+) {
+  if (!nama) {
+    return '?';
+  }
+
+  return nama
+    .split(' ')
+    .filter(Boolean)
+    .map(
+      (
+        bagian
+      ) =>
+        bagian[0]
+    )
+    .slice(
+      0,
+      2
+    )
+    .join('')
+    .toUpperCase();
+}
+
+
 export default function KelompokBinaan() {
   const {
     groups,
     mentees,
     loading,
-  } = useMentor();
+  } =
+    useMentor();
+
 
   const [
     siap,
     setSiap,
-  ] = useState(false);
+  ] =
+    useState(
+      false
+    );
+
 
   const [
     grupBuka,
     setGrupBuka,
-  ] = useState(null);
+  ] =
+    useState(
+      null
+    );
+
 
   const [
     projekBuka,
     setProjekBuka,
-  ] = useState({});
+  ] =
+    useState(
+      {}
+    );
+
 
   const [
     anggotaDetail,
     setAnggotaDetail,
-  ] = useState(null);
+  ] =
+    useState(
+      null
+    );
+
 
   const [
     logbookTerbuka,
     setLogbookTerbuka,
-  ] = useState(null);
+  ] =
+    useState(
+      null
+    );
+
 
   const [
     tampilkanSemuaLogbook,
     setTampilkanSemuaLogbook,
-  ] = useState(false);
+  ] =
+    useState(
+      false
+    );
+
 
   const [
     projects,
     setProjects,
-  ] = useState([]);
+  ] =
+    useState(
+      []
+    );
+
 
   const [
     subtasks,
     setSubtasks,
-  ] = useState([]);
+  ] =
+    useState(
+      []
+    );
+
 
   const [
     rubrik,
     setRubrik,
-  ] = useState([]);
+  ] =
+    useState(
+      []
+    );
+
 
   const [
     logbook,
     setLogbook,
-  ] = useState([]);
+  ] =
+    useState(
+      []
+    );
+
 
   const [
     stats,
     setStats,
-  ] = useState({});
+  ] =
+    useState(
+      {}
+    );
+
 
   const [
     search,
     setSearch,
-  ] = useState('');
+  ] =
+    useState(
+      ''
+    );
 
-  const [params] =
+
+  const [
+    params,
+  ] =
     useSearchParams();
 
-  useEffect(() => {
-    if (!loading) {
-      muat();
-    }
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading]);
+  /* =====================================================
+     LOAD DATA
+  ===================================================== */
+
+  useEffect(
+    () => {
+      if (!loading) {
+        muat();
+      }
+
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    },
+    [
+      loading,
+    ]
+  );
+
 
   async function muat() {
     if (
-      mentees.length === 0 &&
-      groups.length === 0
+      mentees.length ===
+        0 &&
+      groups.length ===
+        0
     ) {
-      setSiap(true);
+      setSiap(
+        true
+      );
+
       return;
     }
 
+
     const ids =
       mentees.map(
-        (m) => m.id
+        (
+          mentee
+        ) =>
+          mentee.id
       );
 
-    const gids =
+
+    const groupIds =
       groups.map(
-        (g) => g.id
+        (
+          group
+        ) =>
+          group.id
       );
+
 
     const [
-      prj,
-      sub,
-      rub,
-      lgb,
+      projectResult,
+      subtaskResult,
+      rubricResult,
+      logbookResult,
     ] =
       await Promise.all([
-        gids.length > 0
+        groupIds.length >
+        0
           ? supabase
               .from(
                 'projects'
               )
-              .select('*')
+              .select(
+                '*'
+              )
               .in(
                 'group_id',
-                gids
+                groupIds
               )
               .order(
                 'created_at'
               )
           : {
-              data: [],
+              data:
+                [],
             },
 
-        ids.length > 0
+        ids.length >
+        0
           ? supabase
               .from(
                 'subtasks'
               )
               .select(
-                '*, projects(group_id, judul_projek), interns(nama_lengkap)'
+                `
+                *,
+                projects(
+                  group_id,
+                  judul_projek
+                ),
+                interns(
+                  nama_lengkap
+                )
+                `
               )
               .in(
                 'intern_id',
@@ -179,32 +320,53 @@ export default function KelompokBinaan() {
                 'created_at'
               )
           : {
-              data: [],
+              data:
+                [],
             },
 
-        ids.length > 0
+        ids.length >
+        0
           ? supabase
               .from(
                 'rubric_scores'
               )
               .select(
-                'intern_id, nilai_soft_skill, nilai_hard_skill, nilai_inisiatif, nilai_pemecahan, nilai_teknis, nilai_komunikasi, nilai_kualitas, nilai_disiplin, periode'
+                `
+                intern_id,
+                nilai_soft_skill,
+                nilai_hard_skill,
+                nilai_inisiatif,
+                nilai_pemecahan,
+                nilai_teknis,
+                nilai_komunikasi,
+                nilai_kualitas,
+                nilai_disiplin,
+                periode
+                `
               )
               .in(
                 'intern_id',
                 ids
               )
           : {
-              data: [],
+              data:
+                [],
             },
 
-        ids.length > 0
+        ids.length >
+        0
           ? supabase
               .from(
                 'logbook'
               )
               .select(
-                'id, intern_id, judul, isi, tanggal'
+                `
+                id,
+                intern_id,
+                judul,
+                isi,
+                tanggal
+                `
               )
               .in(
                 'intern_id',
@@ -218,30 +380,46 @@ export default function KelompokBinaan() {
                 }
               )
           : {
-              data: [],
+              data:
+                [],
             },
       ]);
 
+
     setProjects(
-      prj.data ?? []
+      projectResult.data ??
+        []
     );
+
 
     setSubtasks(
-      sub.data ?? []
+      subtaskResult.data ??
+        []
     );
+
 
     setRubrik(
-      rub.data ?? []
+      rubricResult.data ??
+        []
     );
+
 
     setLogbook(
-      lgb.data ?? []
+      logbookResult.data ??
+        []
     );
 
-    const entri =
+
+    /* ===================================================
+       STATISTIK PRESENSI TIAP PESERTA
+    =================================================== */
+
+    const entriStatistik =
       await Promise.all(
         mentees.map(
-          async (m) => {
+          async (
+            mentee
+          ) => {
             const {
               data,
             } =
@@ -249,139 +427,527 @@ export default function KelompokBinaan() {
                 'get_attendance_stats',
                 {
                   p_intern_id:
-                    m.id,
+                    mentee.id,
                 }
               );
 
             return [
-              m.id,
+              mentee.id,
               data,
             ];
           }
         )
       );
 
+
     setStats(
       Object.fromEntries(
-        entri
+        entriStatistik
       )
     );
 
-    setSiap(true);
+
+    setSiap(
+      true
+    );
+
+
+    /* ===================================================
+       EXACT DEEPLINK NOTIFIKASI REVIEW
+
+       /mentor/kelompok
+         ?panel=review
+         &group=...
+         &project=...
+         &subtask=...
+    =================================================== */
 
     const targetGroup =
       params.get(
         'group'
       );
 
+
     const targetProject =
       params.get(
         'project'
       );
+
 
     const targetSubtask =
       params.get(
         'subtask'
       );
 
-    if (targetGroup) {
+
+    if (
+      targetGroup
+    ) {
       setGrupBuka(
         targetGroup
       );
 
-      if (targetProject) {
+
+      if (
+        targetProject
+      ) {
         setProjekBuka(
-          (state) => ({
-            ...state,
+          (
+            sebelumnya
+          ) => ({
+            ...sebelumnya,
 
             [targetGroup]:
               targetProject,
           })
         );
 
+
         const target =
           targetSubtask
             ? (
-                sub.data ??
+                subtaskResult.data ??
                 []
               ).find(
-                (item) =>
+                (
+                  item
+                ) =>
                   item.id ===
                   targetSubtask
               )
             : null;
 
-        setTimeout(() => {
-          const projectEl =
-            document.getElementById(
-              `projek-${targetProject}`
+
+        setTimeout(
+          () => {
+            const projectElement =
+              document.getElementById(
+                `projek-${targetProject}`
+              );
+
+
+            if (
+              projectElement &&
+              target
+            ) {
+              const judulTarget =
+                (
+                  target.judul ??
+                  ''
+                ).trim();
+
+
+              const daftarJudul =
+                Array.from(
+                  projectElement.querySelectorAll(
+                    'li p'
+                  )
+                );
+
+
+              const elementJudul =
+                daftarJudul.find(
+                  (
+                    element
+                  ) =>
+                    (
+                      element.textContent ??
+                      ''
+                    ).trim() ===
+                    judulTarget
+                );
+
+
+              const kartuTugas =
+                elementJudul?.closest(
+                  'li'
+                );
+
+
+              if (
+                kartuTugas
+              ) {
+                kartuTugas.scrollIntoView(
+                  {
+                    behavior:
+                      'smooth',
+
+                    block:
+                      'center',
+                  }
+                );
+
+
+                kartuTugas.classList.add(
+                  'ring-4',
+                  'ring-purple-300',
+                  'ring-offset-2'
+                );
+
+
+                setTimeout(
+                  () => {
+                    kartuTugas.classList.remove(
+                      'ring-4',
+                      'ring-purple-300',
+                      'ring-offset-2'
+                    );
+                  },
+                  3000
+                );
+
+
+                return;
+              }
+            }
+
+
+            projectElement?.scrollIntoView(
+              {
+                behavior:
+                  'smooth',
+
+                block:
+                  'center',
+              }
+            );
+          },
+          700
+        );
+
+
+        return;
+      }
+    }
+
+
+    if (
+      params.get(
+        'panel'
+      ) ===
+      'review'
+    ) {
+      setTimeout(
+        () => {
+          document
+            .getElementById(
+              'panel-review'
+            )
+            ?.scrollIntoView(
+              {
+                behavior:
+                  'smooth',
+
+                block:
+                  'start',
+              }
+            );
+        },
+        300
+      );
+    }
+  }
+
+
+  /* =====================================================
+     HELPER DATA
+  ===================================================== */
+
+  const anggota =
+    (
+      groupId
+    ) =>
+      mentees.filter(
+        (
+          mentee
+        ) =>
+          mentee.group_id ===
+          groupId
+      );
+
+
+  const projek =
+    (
+      groupId
+    ) =>
+      projects.filter(
+        (
+          project
+        ) =>
+          project.group_id ===
+          groupId
+      );
+
+
+  function progresM(
+    internId
+  ) {
+    const semua =
+      subtasks.filter(
+        (
+          subtask
+        ) =>
+          subtask.intern_id ===
+          internId
+      );
+
+
+    const selesai =
+      semua.filter(
+        (
+          subtask
+        ) =>
+          subtask.status ===
+          'Selesai'
+      ).length;
+
+
+    if (
+      semua.length ===
+      0
+    ) {
+      return null;
+    }
+
+
+    return Math.round(
+      (
+        selesai *
+        100
+      ) /
+        semua.length
+    );
+  }
+
+
+  function rubrikM(
+    internId
+  ) {
+    const rows =
+      rubrik.filter(
+        (
+          row
+        ) =>
+          row.intern_id ===
+          internId
+      );
+
+
+    if (
+      rows.length ===
+      0
+    ) {
+      return null;
+    }
+
+
+    const average =
+      (
+        values
+      ) => {
+        const valid =
+          values
+            .map(Number)
+            .filter(
+              (
+                value
+              ) =>
+                Number.isFinite(
+                  value
+                )
             );
 
-          if (
-            projectEl &&
-            target
-          ) {
-            const targetTitle =
-              (
-                target.judul ??
-                ''
-              ).trim();
 
-            const titleElements =
-              Array.from(
-                projectEl.querySelectorAll(
-                  'li p'
-                )
-              );
+        if (
+          valid.length ===
+          0
+        ) {
+          return null;
+        }
 
-            const titleEl =
-              titleElements.find(
-                (el) =>
-                  (
-                    el.textContent ??
-                    ''
-                  ).trim() ===
-                  targetTitle
-              );
 
-            const taskCard =
-              titleEl?.closest(
-                'li'
-              );
+        return Math.round(
+          valid.reduce(
+            (
+              total,
+              value
+            ) =>
+              total +
+              value,
+            0
+          ) /
+            valid.length
+        );
+      };
 
-            if (taskCard) {
-              taskCard.scrollIntoView(
-                {
-                  behavior:
-                    'smooth',
 
-                  block:
-                    'center',
-                }
-              );
+    return {
+      soft:
+        average(
+          rows.map(
+            (
+              row
+            ) =>
+              row.nilai_soft_skill
+          )
+        ),
 
-              taskCard.classList.add(
-                'ring-4',
-                'ring-purple-300',
-                'ring-offset-2'
-              );
+      hard:
+        average(
+          rows.map(
+            (
+              row
+            ) =>
+              row.nilai_hard_skill
+          )
+        ),
+    };
+  }
 
-              setTimeout(
-                () => {
-                  taskCard.classList.remove(
-                    'ring-4',
-                    'ring-purple-300',
-                    'ring-offset-2'
-                  );
-                },
-                3000
-              );
 
-              return;
-            }
-          }
+  function menungguReview(
+    groupId
+  ) {
+    const ids =
+      anggota(
+        groupId
+      ).map(
+        (
+          item
+        ) =>
+          item.id
+      );
 
-          projectEl?.scrollIntoView(
+
+    return subtasks.filter(
+      (
+        subtask
+      ) =>
+        ids.includes(
+          subtask.intern_id
+        ) &&
+        subtask.status ===
+          'Menunggu Review'
+    ).length;
+  }
+
+
+  /* =====================================================
+     ANTREAN REVIEW
+  ===================================================== */
+
+  const antreanReview =
+    subtasks
+      .filter(
+        (
+          subtask
+        ) =>
+          subtask.status ===
+          'Menunggu Review'
+      )
+      .sort(
+        (
+          a,
+          b
+        ) => {
+          const waktuA =
+            a.submitted_at
+              ? new Date(
+                  a.submitted_at
+                ).getTime()
+              : 0;
+
+
+          const waktuB =
+            b.submitted_at
+              ? new Date(
+                  b.submitted_at
+                ).getTime()
+              : 0;
+
+
+          return (
+            waktuA -
+            waktuB
+          );
+        }
+      );
+
+
+  const kataCari =
+    search
+      .toLowerCase()
+      .trim();
+
+
+  const antreanFiltered =
+    kataCari
+      ? antreanReview.filter(
+          (
+            subtask
+          ) =>
+            subtask.judul
+              ?.toLowerCase()
+              .includes(
+                kataCari
+              ) ||
+
+            subtask.interns
+              ?.nama_lengkap
+              ?.toLowerCase()
+              .includes(
+                kataCari
+              ) ||
+
+            subtask.projects
+              ?.judul_projek
+              ?.toLowerCase()
+              .includes(
+                kataCari
+              )
+        )
+      : antreanReview;
+
+
+  function bukaDariAntrean(
+    subtask
+  ) {
+    const groupId =
+      subtask.projects
+        ?.group_id;
+
+
+    if (
+      !groupId
+    ) {
+      return;
+    }
+
+
+    setGrupBuka(
+      groupId
+    );
+
+
+    setProjekBuka(
+      (
+        sebelumnya
+      ) => ({
+        ...sebelumnya,
+
+        [groupId]:
+          subtask.project_id,
+      })
+    );
+
+
+    setTimeout(
+      () => {
+        document
+          .getElementById(
+            `projek-${subtask.project_id}`
+          )
+          ?.scrollIntoView(
             {
               behavior:
                 'smooth',
@@ -390,263 +956,55 @@ export default function KelompokBinaan() {
                 'center',
             }
           );
-        }, 700);
-
-        return;
-      }
-    }
-
-    if (
-      params.get(
-        'panel'
-      ) === 'review'
-    ) {
-      setTimeout(() => {
-        document
-          .getElementById(
-            'panel-review'
-          )
-          ?.scrollIntoView(
-            {
-              behavior:
-                'smooth',
-
-              block:
-                'start',
-            }
-          );
-      }, 300);
-    }
+      },
+      400
+    );
   }
 
-  const anggota =
-    (gid) =>
-      mentees.filter(
-        (m) =>
-          m.group_id ===
-          gid
-      );
 
-  const projek =
-    (gid) =>
-      projects.filter(
-        (p) =>
-          p.group_id ===
-          gid
-      );
-
-  const progresM =
-    (iid) => {
-      const total =
-        subtasks.filter(
-          (s) =>
-            s.intern_id ===
-            iid
-        ).length;
-
-      const selesai =
-        subtasks.filter(
-          (s) =>
-            s.intern_id ===
-              iid &&
-            s.status ===
-              'Selesai'
-        ).length;
-
-      return total
-        ? Math.round(
-            (
-              selesai *
-              100
-            ) /
-              total
-          )
-        : null;
-    };
-
-  const rubrikM =
-    (iid) => {
-      const rows =
-        rubrik.filter(
-          (r) =>
-            r.intern_id ===
-            iid
-        );
-
-      if (!rows.length) {
-        return null;
-      }
-
-      const avg =
-        (arr) =>
-          Math.round(
-            arr.reduce(
-              (
-                a,
-                b
-              ) =>
-                a + b,
-              0
-            ) /
-              arr.length
-          );
-
-      return {
-        soft: avg(
-          rows.map(
-            (r) =>
-              Number(
-                r.nilai_soft_skill
-              )
-          )
-        ),
-
-        hard: avg(
-          rows.map(
-            (r) =>
-              Number(
-                r.nilai_hard_skill
-              )
-          )
-        ),
-      };
-    };
-
-  const menungguReview =
-    (gid) => {
-      const ids =
-        anggota(
-          gid
-        ).map(
-          (a) =>
-            a.id
-        );
-
-      return subtasks.filter(
-        (s) =>
-          ids.includes(
-            s.intern_id
-          ) &&
-          s.status ===
-            'Menunggu Review'
-      ).length;
-    };
-
-  const antreanReview =
-    subtasks
-      .filter(
-        (s) =>
-          s.status ===
-          'Menunggu Review'
-      )
-      .sort(
-        (a, b) =>
-          new Date(
-            a.submitted_at
-          ) -
-          new Date(
-            b.submitted_at
-          )
-      );
-
-  const cari =
-    search
-      .toLowerCase()
-      .trim();
-
-  const antreanFiltered =
-    cari
-      ? antreanReview.filter(
-          (s) =>
-            s.judul
-              ?.toLowerCase()
-              .includes(
-                cari
-              ) ||
-            s.interns
-              ?.nama_lengkap
-              ?.toLowerCase()
-              .includes(
-                cari
-              ) ||
-            s.projects
-              ?.judul_projek
-              ?.toLowerCase()
-              .includes(
-                cari
-              )
-        )
-      : antreanReview;
-
-  function bukaDariAntrean(
-    s
-  ) {
-    const gid =
-      s.projects?.group_id;
-
-    if (!gid) {
-      return;
-    }
-
-    setGrupBuka(
-      gid
-    );
-
-    setProjekBuka(
-      (prev) => ({
-        ...prev,
-
-        [gid]:
-          s.project_id,
-      })
-    );
-
-    setTimeout(() => {
-      document
-        .getElementById(
-          `projek-${s.project_id}`
-        )
-        ?.scrollIntoView(
-          {
-            behavior:
-              'smooth',
-
-            block:
-              'center',
-          }
-        );
-    }, 400);
-  }
+  /* =====================================================
+     MODAL PESERTA
+  ===================================================== */
 
   function bukaAnggota(
-    m
+    mentee
   ) {
     setAnggotaDetail(
-      m
+      mentee
     );
+
 
     setLogbookTerbuka(
       null
     );
 
+
     setTampilkanSemuaLogbook(
       false
     );
   }
+
 
   function tutupAnggota() {
     setAnggotaDetail(
       null
     );
 
+
     setLogbookTerbuka(
       null
     );
+
 
     setTampilkanSemuaLogbook(
       false
     );
   }
+
+
+  /* =====================================================
+     LOADING
+  ===================================================== */
 
   if (
     loading ||
@@ -663,8 +1021,13 @@ export default function KelompokBinaan() {
     );
   }
 
+
   return (
     <div>
+      {/* =================================================
+          PANEL REVIEW
+      ================================================= */}
+
       <div
         id="panel-review"
         className="anim-up rounded-2xl border border-amber-200 bg-amber-50/60 p-4 shadow-sm sm:p-5"
@@ -684,19 +1047,24 @@ export default function KelompokBinaan() {
             )}
           </h2>
 
+
           <div className="relative">
             <input
               value={
                 search
               }
-              onChange={(e) =>
+              onChange={(
+                event
+              ) =>
                 setSearch(
-                  e.target.value
+                  event.target
+                    .value
                 )
               }
               placeholder="Cari tugas / peserta / projek..."
               className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-medium focus:border-indigo-500 focus:outline-none sm:w-72"
             />
+
 
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">
               {search ? (
@@ -718,6 +1086,7 @@ export default function KelompokBinaan() {
           </div>
         </div>
 
+
         {antreanFiltered.length ===
         0 ? (
           <p className="mt-3 rounded-xl bg-white/70 py-4 text-center text-xs font-semibold text-slate-400">
@@ -735,9 +1104,17 @@ export default function KelompokBinaan() {
               )
               .map(
                 (
-                  s,
-                  i
+                  subtask,
+                  index
                 ) => {
+                  const submittedAt =
+                    subtask.submitted_at
+                      ? new Date(
+                          subtask.submitted_at
+                        ).getTime()
+                      : Date.now();
+
+
                   const jamTunggu =
                     Math.max(
                       0,
@@ -745,51 +1122,55 @@ export default function KelompokBinaan() {
                       Math.floor(
                         (
                           Date.now() -
-                          new Date(
-                            s.submitted_at
-                          )
+                          submittedAt
                         ) /
                           3600000
                       )
                     );
 
+
                   return (
                     <button
                       key={
-                        s.id
+                        subtask.id
                       }
                       type="button"
                       onClick={() =>
                         bukaDariAntrean(
-                          s
+                          subtask
                         )
                       }
                       className="card-hover anim-in flex w-full flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 bg-white p-3.5 text-left shadow-sm"
                       style={{
-                        animationDelay: `${i * 50}ms`,
+                        animationDelay:
+                          `${index * 50}ms`,
                       }}
                     >
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-bold text-slate-800">
                           {
-                            s.judul
+                            subtask.judul
                           }
                         </p>
 
+
                         <p className="mt-0.5 truncate text-[11px] text-slate-400">
                           👤{' '}
+
                           {
-                            s
+                            subtask
                               .interns
                               ?.nama_lengkap
                           }
 
-                          {s
+
+                          {subtask
                             .projects
                             ?.judul_projek &&
-                            ` · 📁 ${s.projects.judul_projek}`}
+                            ` · 📁 ${subtask.projects.judul_projek}`}
                         </p>
                       </div>
+
 
                       <span
                         className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ${
@@ -810,6 +1191,7 @@ export default function KelompokBinaan() {
                 }
               )}
 
+
             {antreanFiltered.length >
               8 && (
               <p className="text-center text-[11px] font-semibold text-slate-400">
@@ -825,10 +1207,16 @@ export default function KelompokBinaan() {
         )}
       </div>
 
+
+      {/* =================================================
+          HEADER
+      ================================================= */}
+
       <div className="anim-up mt-5">
         <h1 className="text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">
           Mentoring
         </h1>
+
 
         <p className="mt-1 text-sm text-slate-500">
           Kelola peserta,
@@ -838,6 +1226,11 @@ export default function KelompokBinaan() {
           tanggung jawabmu.
         </p>
       </div>
+
+
+      {/* =================================================
+          KELOMPOK
+      ================================================= */}
 
       {groups.length ===
       0 ? (
@@ -861,44 +1254,56 @@ export default function KelompokBinaan() {
         <div className="mt-4 space-y-3">
           {groups.map(
             (
-              g,
-              i
+              group,
+              groupIndex
             ) => {
-              const buka =
+              const terbuka =
                 grupBuka ===
-                g.id;
+                group.id;
 
-              const nReview =
+
+              const jumlahReview =
                 menungguReview(
-                  g.id
+                  group.id
                 );
 
-              const nProjek =
+
+              const daftarProjek =
                 projek(
-                  g.id
-                ).length;
+                  group.id
+                );
+
+
+              const daftarAnggota =
+                anggota(
+                  group.id
+                );
+
 
               return (
                 <div
                   key={
-                    g.id
+                    group.id
                   }
-                  className="anim-up relative overflow-hidden rounded-2xl border shadow-sm transition-shadow hover:shadow-md"
+                  className="anim-up relative overflow-hidden rounded-2xl border border-slate-200 shadow-sm transition-shadow hover:shadow-md"
                   style={{
-                    animationDelay: `${i * 80}ms`,
+                    animationDelay:
+                      `${groupIndex * 80}ms`,
                   }}
                 >
+                  {/* HEADER KELOMPOK */}
+
                   <button
                     type="button"
                     onClick={() =>
                       setGrupBuka(
-                        buka
+                        terbuka
                           ? null
-                          : g.id
+                          : group.id
                       )
                     }
                     className={`w-full p-4 text-left transition sm:p-5 ${
-                      buka
+                      terbuka
                         ? 'bg-slate-50'
                         : 'bg-white hover:bg-slate-50/50'
                     }`}
@@ -906,7 +1311,7 @@ export default function KelompokBinaan() {
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-3">
                         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-sm font-extrabold text-white">
-                          {g.nama_kelompok
+                          {group.nama_kelompok
                             ?.slice(
                               0,
                               2
@@ -914,40 +1319,44 @@ export default function KelompokBinaan() {
                             .toUpperCase()}
                         </span>
 
+
                         <div className="min-w-0">
                           <p className="truncate text-base font-bold text-slate-800">
                             {
-                              g.nama_kelompok
+                              group.nama_kelompok
                             }
                           </p>
 
+
                           <p className="text-xs text-slate-400">
-                            {anggota(
-                              g.id
-                            ).length}{' '}
+                            {
+                              daftarAnggota.length
+                            }{' '}
                             peserta
 
-                            {nProjek >
+                            {daftarProjek.length >
                               0 &&
-                              ` · ${nProjek} projek`}
+                              ` · ${daftarProjek.length} projek`}
                           </p>
                         </div>
                       </div>
 
+
                       <div className="flex shrink-0 items-center gap-2">
-                        {nReview >
+                        {jumlahReview >
                           0 && (
                           <span className="anim-pop rounded-full bg-amber-400 px-2.5 py-1 text-[10px] font-black text-amber-900">
                             ⏳{' '}
                             {
-                              nReview
+                              jumlahReview
                             }
                           </span>
                         )}
 
+
                         <span
                           className={`text-xs text-slate-400 transition-transform duration-300 ${
-                            buka
+                            terbuka
                               ? 'rotate-180'
                               : ''
                           }`}
@@ -958,148 +1367,182 @@ export default function KelompokBinaan() {
                     </div>
                   </button>
 
-                  {buka && (
+
+                  {/* ISI KELOMPOK */}
+
+                  {terbuka && (
                     <div className="anim-down border-t border-slate-100 bg-white p-4 sm:p-5">
+                      {/* ===================================
+                          ANGGOTA
+                      =================================== */}
+
                       <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
                         Anggota (
-                        {anggota(
-                          g.id
-                        ).length}
+                        {
+                          daftarAnggota.length
+                        }
                         )
                       </p>
 
+
                       <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                        {anggota(
-                          g.id
-                        ).length ===
+                        {daftarAnggota.length ===
                         0 ? (
-                          <p className="rounded-xl bg-slate-50 p-4 text-center text-sm text-slate-400">
+                          <p className="rounded-xl bg-slate-50 p-4 text-center text-sm text-slate-400 sm:col-span-2">
                             Belum ada
                             anggota di
                             kelompok ini.
                           </p>
                         ) : (
-                          anggota(
-                            g.id
-                          ).map(
+                          daftarAnggota.map(
                             (
-                              m,
-                              j
+                              mentee,
+                              index
                             ) => {
-                              const s =
+                              const statistik =
                                 stats[
-                                  m
-                                    .id
+                                  mentee.id
                                 ];
 
-                              const persen =
-                                s?.persen_kehadiran;
 
-                              const prog =
+                              const kehadiran =
+                                statistik
+                                  ?.persen_kehadiran;
+
+
+                              const progress =
                                 progresM(
-                                  m.id
+                                  mentee.id
                                 );
 
-                              const rb =
+
+                              const nilaiRubrik =
                                 rubrikM(
-                                  m.id
+                                  mentee.id
                                 );
+
 
                               return (
                                 <button
                                   key={
-                                    m.id
+                                    mentee.id
                                   }
                                   type="button"
                                   onClick={() =>
                                     bukaAnggota(
-                                      m
+                                      mentee
                                     )
                                   }
-                                  className="anim-up card-hover flex items-center justify-between gap-3 rounded-xl border border-slate-100 p-3 text-left transition hover:border-indigo-200 hover:bg-indigo-50/40"
+                                  className="anim-up card-hover flex min-w-0 items-center justify-between gap-3 rounded-xl border border-slate-100 p-3 text-left transition hover:border-indigo-200 hover:bg-indigo-50/40"
                                   style={{
-                                    animationDelay: `${j * 60}ms`,
+                                    animationDelay:
+                                      `${index * 60}ms`,
                                   }}
                                 >
                                   <div className="flex min-w-0 items-center gap-2.5">
                                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-bold text-white">
-                                      {m.nama_lengkap
-                                        ?.split(
-                                          ' '
-                                        )
-                                        .map(
-                                          (
-                                            x
-                                          ) =>
-                                            x[0]
-                                        )
-                                        .slice(
-                                          0,
-                                          2
-                                        )
-                                        .join(
-                                          ''
-                                        )}
+                                      {inisial(
+                                        mentee.nama_lengkap
+                                      )}
                                     </span>
+
 
                                     <div className="min-w-0">
                                       <p className="truncate text-sm font-bold text-slate-800">
                                         {
-                                          m.nama_lengkap
+                                          mentee.nama_lengkap
                                         }
                                       </p>
 
+
                                       <p className="truncate text-[11px] text-slate-400">
                                         {
-                                          m.email
+                                          mentee.email
                                         }
                                       </p>
+
+
+                                      {/* =====================
+                                          FASE 5-7E — JURUSAN
+                                      ===================== */}
+
+                                      <p
+                                        className={`mt-0.5 truncate text-[10px] font-semibold ${
+                                          mentee.jurusan
+                                            ? 'text-purple-600'
+                                            : 'text-amber-500'
+                                        }`}
+                                      >
+                                        🎓{' '}
+
+                                        {mentee.jurusan ??
+                                          'Jurusan / Program Studi belum diisi'}
+                                      </p>
+
+
+                                      {mentee.instansi && (
+                                        <p className="mt-0.5 truncate text-[10px] text-slate-400">
+                                          🏫{' '}
+
+                                          {
+                                            mentee.instansi
+                                          }
+                                        </p>
+                                      )}
                                     </div>
                                   </div>
+
 
                                   <div className="flex shrink-0 flex-col items-end gap-0.5 text-[11px]">
                                     <div className="flex items-center gap-1.5 font-bold">
                                       <span
                                         className={
-                                          persen >=
+                                          kehadiran >=
                                           85
                                             ? 'text-green-600'
                                             : 'text-red-500'
                                         }
                                       >
                                         🕐{' '}
-                                        {persen ??
+
+                                        {kehadiran ??
                                           '—'}
                                         %
                                       </span>
 
-                                      {prog !==
+
+                                      {progress !==
                                         null && (
                                         <span className="text-slate-500">
                                           📊{' '}
+
                                           {
-                                            prog
+                                            progress
                                           }
                                           %
                                         </span>
                                       )}
                                     </div>
 
+
                                     <span className="text-[10px] text-slate-400">
-                                      {rb ? (
+                                      {nilaiRubrik ? (
                                         <>
                                           <span className="text-amber-600">
                                             S
                                             {
-                                              rb.soft
+                                              nilaiRubrik.soft ??
+                                              '—'
                                             }
-                                          </span>{' '}
-                                          ·{' '}
+                                          </span>
+
+                                          {' · '}
 
                                           <span className="text-blue-600">
                                             H
                                             {
-                                              rb.hard
+                                              nilaiRubrik.hard ??
+                                              '—'
                                             }
                                           </span>
                                         </>
@@ -1115,52 +1558,57 @@ export default function KelompokBinaan() {
                         )}
                       </div>
 
+
+                      {/* ===================================
+                          PROJEK INDUK
+                      =================================== */}
+
                       <div className="mt-5 border-t border-slate-100 pt-4">
                         <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
                           Projek Induk
                         </p>
 
-                        {nProjek ===
+
+                        {daftarProjek.length ===
                         0 ? (
                           <div className="anim-in mt-2">
                             <SubtaskManager
                               group={
-                                g
+                                group
                               }
-                              anggota={anggota(
-                                g.id
-                              )}
+                              anggota={
+                                daftarAnggota
+                              }
                             />
                           </div>
                         ) : (
                           <div className="mt-2 space-y-2">
-                            {projek(
-                              g.id
-                            ).map(
+                            {daftarProjek.map(
                               (
-                                p,
-                                j
+                                project,
+                                projectIndex
                               ) => {
-                                const pb =
+                                const projectTerbuka =
                                   projekBuka[
-                                    g
-                                      .id
+                                    group.id
                                   ] ===
-                                  p.id;
+                                  project.id;
+
 
                                 return (
                                   <div
                                     key={
-                                      p.id
+                                      project.id
                                     }
-                                    id={`projek-${p.id}`}
+                                    id={`projek-${project.id}`}
                                     className={`anim-up overflow-hidden rounded-xl border transition-colors ${
-                                      pb
+                                      projectTerbuka
                                         ? 'border-indigo-300 bg-indigo-50/30'
                                         : 'border-slate-200 bg-white'
                                     }`}
                                     style={{
-                                      animationDelay: `${j * 60}ms`,
+                                      animationDelay:
+                                        `${projectIndex * 60}ms`,
                                     }}
                                   >
                                     <button
@@ -1168,14 +1616,14 @@ export default function KelompokBinaan() {
                                       onClick={() =>
                                         setProjekBuka(
                                           (
-                                            s
+                                            sebelumnya
                                           ) => ({
-                                            ...s,
+                                            ...sebelumnya,
 
-                                            [g.id]:
-                                              pb
+                                            [group.id]:
+                                              projectTerbuka
                                                 ? null
-                                                : p.id,
+                                                : project.id,
                                           })
                                         )
                                       }
@@ -1186,26 +1634,29 @@ export default function KelompokBinaan() {
                                           📁
                                         </span>
 
+
                                         <div className="min-w-0">
                                           <p className="truncate text-sm font-bold text-slate-800">
                                             {
-                                              p.judul_projek
+                                              project.judul_projek
                                             }
                                           </p>
 
+
                                           <p className="text-[11px] text-slate-400">
-                                            {p.deadline_projek
+                                            {project.deadline_projek
                                               ? `⏰ ${fmtTanggal(
-                                                  p.deadline_projek
+                                                  project.deadline_projek
                                                 )}`
                                               : 'tanpa deadline'}
                                           </p>
                                         </div>
                                       </div>
 
+
                                       <span
                                         className={`shrink-0 text-xs text-slate-400 transition-transform duration-300 ${
-                                          pb
+                                          projectTerbuka
                                             ? 'rotate-180'
                                             : ''
                                         }`}
@@ -1214,17 +1665,18 @@ export default function KelompokBinaan() {
                                       </span>
                                     </button>
 
-                                    {pb && (
+
+                                    {projectTerbuka && (
                                       <div className="anim-down border-t border-indigo-100">
                                         <SubtaskManager
                                           group={
-                                            g
+                                            group
                                           }
-                                          anggota={anggota(
-                                            g.id
-                                          )}
+                                          anggota={
+                                            daftarAnggota
+                                          }
                                           projekFilter={
-                                            p.id
+                                            project.id
                                           }
                                         />
                                       </div>
@@ -1234,6 +1686,7 @@ export default function KelompokBinaan() {
                               }
                             )}
 
+
                             <details className="anim-up rounded-xl border border-dashed border-slate-300">
                               <summary className="cursor-pointer select-none px-4 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
                                 ➕ Tambah
@@ -1241,14 +1694,15 @@ export default function KelompokBinaan() {
                                 baru
                               </summary>
 
+
                               <div className="border-t border-slate-100 p-3">
                                 <SubtaskManager
                                   group={
-                                    g
+                                    group
                                   }
-                                  anggota={anggota(
-                                    g.id
-                                  )}
+                                  anggota={
+                                    daftarAnggota
+                                  }
                                 />
                               </div>
                             </details>
@@ -1264,6 +1718,11 @@ export default function KelompokBinaan() {
         </div>
       )}
 
+
+      {/* =================================================
+          MODAL DETAIL PESERTA
+      ================================================= */}
+
       <Modal
         open={
           !!anggotaDetail
@@ -1272,35 +1731,44 @@ export default function KelompokBinaan() {
           tutupAnggota
         }
         title={
-          anggotaDetail?.nama_lengkap ??
+          anggotaDetail
+            ?.nama_lengkap ??
           ''
         }
       >
         {anggotaDetail &&
           (() => {
-            const s =
+            const statistik =
               stats[
-                anggotaDetail
-                  .id
+                anggotaDetail.id
               ];
 
-            const persen =
-              s?.persen_kehadiran;
 
-            const prog =
+            const persenKehadiran =
+              statistik
+                ?.persen_kehadiran;
+
+
+            const progressTugas =
               progresM(
                 anggotaDetail.id
               );
 
-            const rbFull =
+
+            const rubrikTerakhir =
               rubrik
                 .filter(
-                  (r) =>
-                    r.intern_id ===
+                  (
+                    row
+                  ) =>
+                    row.intern_id ===
                     anggotaDetail.id
                 )
                 .sort(
-                  (a, b) =>
+                  (
+                    a,
+                    b
+                  ) =>
                     (
                       b.periode ??
                       ''
@@ -1310,59 +1778,125 @@ export default function KelompokBinaan() {
                     )
                 )[0];
 
-            const semuaLogs =
+
+            const semuaLogbook =
               logbook.filter(
-                (l) =>
-                  l.intern_id ===
+                (
+                  row
+                ) =>
+                  row.intern_id ===
                   anggotaDetail.id
               );
 
-            const logsTampil =
+
+            const logbookDitampilkan =
               tampilkanSemuaLogbook
-                ? semuaLogs
-                : semuaLogs.slice(
+                ? semuaLogbook
+                : semuaLogbook.slice(
                     0,
                     5
                   );
 
+
             return (
               <div className="space-y-3 text-sm">
-                <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 text-sm font-bold text-white">
-                    {anggotaDetail.nama_lengkap
-                      .split(
-                        ' '
-                      )
-                      .map(
-                        (k) =>
-                          k[0]
-                      )
-                      .slice(
-                        0,
-                        2
-                      )
-                      .join(
-                        ''
-                      )}
-                  </div>
+                {/* ================================
+                    IDENTITAS PESERTA
+                ================================ */}
 
-                  <div className="min-w-0">
-                    <p className="font-bold text-slate-800">
-                      {
+                <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 text-sm font-bold text-white">
+                      {inisial(
                         anggotaDetail.nama_lengkap
-                      }
-                    </p>
+                      )}
+                    </div>
 
-                    <p className="truncate text-xs text-slate-500">
-                      {
-                        anggotaDetail.email
-                      }
-                    </p>
+
+                    <div className="min-w-0 flex-1">
+                      <p className="font-bold text-slate-800">
+                        {
+                          anggotaDetail.nama_lengkap
+                        }
+                      </p>
+
+
+                      <p className="truncate text-xs text-slate-500">
+                        {
+                          anggotaDetail.email
+                        }
+                      </p>
+
+
+                      {/* ==========================
+                          FASE 5-7E — IDENTITAS
+                      ========================== */}
+
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        <span
+                          className={`max-w-full rounded-full px-2.5 py-1 text-[9px] font-bold ${
+                            anggotaDetail.jurusan
+                              ? 'bg-purple-100 text-purple-700 ring-1 ring-purple-200'
+                              : 'bg-amber-100 text-amber-700 ring-1 ring-amber-200'
+                          }`}
+                        >
+                          🎓{' '}
+
+                          {anggotaDetail.jurusan ??
+                            'Jurusan / Program Studi belum diisi'}
+                        </span>
+
+
+                        {anggotaDetail.instansi && (
+                          <span className="max-w-full rounded-full bg-white px-2.5 py-1 text-[9px] font-semibold text-slate-600 ring-1 ring-slate-200">
+                            🏫{' '}
+
+                            {
+                              anggotaDetail.instansi
+                            }
+                          </span>
+                        )}
+
+
+                        {anggotaDetail.divisi && (
+                          <span className="rounded-full bg-indigo-100 px-2.5 py-1 text-[9px] font-bold text-indigo-700 ring-1 ring-indigo-200">
+                            🧩{' '}
+
+                            {
+                              anggotaDetail.divisi
+                            }
+                          </span>
+                        )}
+                      </div>
+
+
+                      {(anggotaDetail.tanggal_mulai ||
+                        anggotaDetail.tanggal_selesai) && (
+                        <p className="mt-2 text-[10px] font-medium text-slate-400">
+                          📅{' '}
+
+                          {fmtTanggal(
+                            anggotaDetail.tanggal_mulai
+                          )}
+
+                          {' – '}
+
+                          {fmtTanggal(
+                            anggotaDetail.tanggal_selesai
+                          )}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                {rbFull &&
-                rbFull.nilai_inisiatif !=
+
+                {/* ================================
+                    RADAR NILAI
+                ================================ */}
+
+                {rubrikTerakhir &&
+                rubrikTerakhir.nilai_inisiatif !=
                   null ? (
                   <div className="rounded-xl border border-slate-100 p-3">
                     <RadarNilai
@@ -1371,30 +1905,32 @@ export default function KelompokBinaan() {
                       }
                       nilai={{
                         inisiatif:
-                          rbFull.nilai_inisiatif,
+                          rubrikTerakhir.nilai_inisiatif,
 
                         pemecahan:
-                          rbFull.nilai_pemecahan,
+                          rubrikTerakhir.nilai_pemecahan,
 
                         teknis:
-                          rbFull.nilai_teknis,
+                          rubrikTerakhir.nilai_teknis,
 
                         komunikasi:
-                          rbFull.nilai_komunikasi,
+                          rubrikTerakhir.nilai_komunikasi,
 
                         kualitas:
-                          rbFull.nilai_kualitas,
+                          rubrikTerakhir.nilai_kualitas,
 
                         disiplin:
-                          rbFull.nilai_disiplin,
+                          rubrikTerakhir.nilai_disiplin,
                       }}
                     />
+
 
                     <p className="mt-1 text-center text-[10px] font-bold uppercase tracking-wide text-slate-400">
                       Penilaian
                       periode{' '}
+
                       {
-                        rbFull.periode
+                        rubrikTerakhir.periode
                       }
                     </p>
                   </div>
@@ -1406,52 +1942,68 @@ export default function KelompokBinaan() {
                   </p>
                 )}
 
+
+                {/* ================================
+                    RINGKASAN
+                ================================ */}
+
                 <div className="grid grid-cols-2 gap-2">
                   <div className="rounded-xl bg-white p-3 text-center ring-1 ring-slate-100">
                     <p className="text-[10px] font-bold uppercase text-slate-400">
                       Kehadiran
                     </p>
 
+
                     <p
                       className={`mt-1 text-xl font-extrabold ${
-                        persen >=
+                        persenKehadiran >=
                         85
                           ? 'text-green-600'
                           : 'text-red-500'
                       }`}
                     >
-                      {persen ??
+                      {persenKehadiran ??
                         '—'}
                       %
                     </p>
 
+
                     {Number(
-                      s?.terlambat ??
+                      statistik
+                        ?.terlambat ??
                         0
                     ) > 0 && (
                       <p className="text-[10px] font-medium text-orange-500">
                         ⚠ telat{' '}
+
                         {
-                          s.terlambat
+                          statistik.terlambat
                         }
                         ×
                       </p>
                     )}
                   </div>
 
+
                   <div className="rounded-xl bg-white p-3 text-center ring-1 ring-slate-100">
                     <p className="text-[10px] font-bold uppercase text-slate-400">
                       Progress Tugas
                     </p>
 
+
                     <p className="mt-1 text-xl font-extrabold text-slate-700">
-                      {prog ===
+                      {progressTugas ===
                       null
                         ? '—'
-                        : `${prog}%`}
+                        : `${progressTugas}%`}
                     </p>
                   </div>
                 </div>
+
+
+                {/* ================================
+                    LOGBOOK PESERTA
+                ================================ */}
 
                 <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
                   <div className="mb-2 flex items-center justify-between gap-2">
@@ -1459,22 +2011,24 @@ export default function KelompokBinaan() {
                       📖 Logbook
                       Harian (
                       {
-                        semuaLogs.length
+                        semuaLogbook.length
                       }
                       )
                     </p>
 
-                    {semuaLogs.length >
+
+                    {semuaLogbook.length >
                       5 && (
                       <button
                         type="button"
                         onClick={() => {
                           setTampilkanSemuaLogbook(
                             (
-                              v
+                              sebelumnya
                             ) =>
-                              !v
+                              !sebelumnya
                           );
+
 
                           setLogbookTerbuka(
                             null
@@ -1484,12 +2038,13 @@ export default function KelompokBinaan() {
                       >
                         {tampilkanSemuaLogbook
                           ? 'Tampilkan 5 terbaru'
-                          : `Lihat semua (${semuaLogs.length})`}
+                          : `Lihat semua (${semuaLogbook.length})`}
                       </button>
                     )}
                   </div>
 
-                  {semuaLogs.length ===
+
+                  {semuaLogbook.length ===
                   0 ? (
                     <p className="py-3 text-center text-[11px] italic text-slate-400">
                       Peserta belum
@@ -1497,25 +2052,26 @@ export default function KelompokBinaan() {
                     </p>
                   ) : (
                     <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
-                      {logsTampil.map(
+                      {logbookDitampilkan.map(
                         (
-                          log
+                          item
                         ) => {
                           const terbuka =
                             logbookTerbuka ===
-                            log.id;
+                            item.id;
+
 
                           return (
                             <button
                               key={
-                                log.id
+                                item.id
                               }
                               type="button"
                               onClick={() =>
                                 setLogbookTerbuka(
                                   terbuka
                                     ? null
-                                    : log.id
+                                    : item.id
                                 )
                               }
                               className={`w-full rounded-lg border bg-white px-3 py-2.5 text-left transition ${
@@ -1527,16 +2083,18 @@ export default function KelompokBinaan() {
                               <div className="flex items-start justify-between gap-2">
                                 <p className="text-[11px] font-bold text-slate-700">
                                   {
-                                    log.judul
+                                    item.judul
                                   }
                                 </p>
+
 
                                 <div className="flex shrink-0 items-center gap-1.5">
                                   <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-bold text-slate-400">
                                     {fmtTanggalLogbook(
-                                      log.tanggal
+                                      item.tanggal
                                     )}
                                   </span>
+
 
                                   <span className="text-[10px] text-slate-400">
                                     {terbuka
@@ -1546,6 +2104,7 @@ export default function KelompokBinaan() {
                                 </div>
                               </div>
 
+
                               <p
                                 className={`mt-1 text-[10px] leading-relaxed text-slate-500 ${
                                   terbuka
@@ -1554,9 +2113,10 @@ export default function KelompokBinaan() {
                                 }`}
                               >
                                 {
-                                  log.isi
+                                  item.isi
                                 }
                               </p>
+
 
                               {!terbuka && (
                                 <p className="mt-1 text-[9px] font-semibold text-indigo-400">
@@ -1573,13 +2133,18 @@ export default function KelompokBinaan() {
                   )}
                 </div>
 
-                {s &&
-                !s.error && (
+
+                {/* ================================
+                    DETAIL PRESENSI
+                ================================ */}
+
+                {statistik &&
+                !statistik.error && (
                   <div className="grid grid-cols-4 gap-1.5 text-center">
                     <div className="rounded-lg bg-green-50 py-2.5">
                       <b className="block text-lg text-green-700">
                         {
-                          s.hadir
+                          statistik.hadir
                         }
                       </b>
 
@@ -1588,10 +2153,11 @@ export default function KelompokBinaan() {
                       </span>
                     </div>
 
+
                     <div className="rounded-lg bg-blue-50 py-2.5">
                       <b className="block text-lg text-blue-700">
                         {
-                          s.izin
+                          statistik.izin
                         }
                       </b>
 
@@ -1600,10 +2166,11 @@ export default function KelompokBinaan() {
                       </span>
                     </div>
 
+
                     <div className="rounded-lg bg-amber-50 py-2.5">
                       <b className="block text-lg text-amber-700">
                         {
-                          s.sakit
+                          statistik.sakit
                         }
                       </b>
 
@@ -1612,10 +2179,11 @@ export default function KelompokBinaan() {
                       </span>
                     </div>
 
+
                     <div className="rounded-lg bg-red-50 py-2.5">
                       <b className="block text-lg text-red-600">
                         {
-                          s.alpha
+                          statistik.alpha
                         }
                       </b>
 

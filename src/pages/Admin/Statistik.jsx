@@ -13,7 +13,6 @@ import {
   Activity,
   AlertTriangle,
   BarChart3,
-  Building2,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
@@ -21,7 +20,6 @@ import {
   Clock3,
   ExternalLink,
   RefreshCw,
-  TrendingUp,
   UserMinus,
   Users,
 } from 'lucide-react';
@@ -31,40 +29,26 @@ import {
 } from '../../lib/supabaseClient';
 
 import Modal from '../../components/Modal';
+import StatistikDetailModal from '../../components/StatistikDetailModal';
+import MonthlyRegistrationChart from '../../components/MonthlyRegistrationChart';
+import MonthlyRecapTable from '../../components/MonthlyRecapTable';
+import DivisionInstitutionAnalytics from '../../components/DivisionInstitutionAnalytics';
+
+import {
+  useStatistikFilters,
+} from '../../hooks/useStatistikFilters';
+
+import {
+  DETAIL_KIND,
+  loadStatistikDetail,
+  namaBulanDetail,
+} from '../../lib/statisticsExplorer';
 
 
-const DIVISI_META = {
-  Admin: {
-    ikon: '📋',
-    label: 'Admin',
-    deskripsi:
-      'Administrasi & Operasional',
-  },
 
-  Sosmed: {
-    ikon: '📱',
-    label: 'Sosmed',
-    deskripsi:
-      'Social Media & Content',
-  },
-
-  Marketplace: {
-    ikon: '🛒',
-    label: 'Marketplace',
-    deskripsi:
-      'E-commerce & Digital Marketing',
-  },
-
-  'Web Developer': {
-    ikon: '💻',
-    label: 'Web Developer',
-    deskripsi:
-      'Website & Programming',
-  },
-};
-
-
-function angka(value) {
+function angka(
+  value
+) {
   const n =
     Number(
       value ??
@@ -79,7 +63,9 @@ function angka(value) {
 }
 
 
-function persen(value) {
+function persen(
+  value
+) {
   const n =
     Number(
       value
@@ -101,7 +87,9 @@ function persen(value) {
 }
 
 
-function nilai(value) {
+function nilai(
+  value
+) {
   if (
     value === null ||
     value === undefined
@@ -124,52 +112,6 @@ function nilai(value) {
 
   return n.toFixed(
     2
-  );
-}
-
-
-function namaBulan(
-  label
-) {
-  if (!label) {
-    return '—';
-  }
-
-  const [
-    tahun,
-    bulan,
-  ] =
-    label
-      .split('-')
-      .map(Number);
-
-  if (
-    !tahun ||
-    !bulan
-  ) {
-    return label;
-  }
-
-  return new Intl.DateTimeFormat(
-    'id-ID',
-    {
-      month:
-        'short',
-
-      year:
-        'numeric',
-
-      timeZone:
-        'Asia/Jakarta',
-    }
-  ).format(
-    new Date(
-      Date.UTC(
-        tahun,
-        bulan - 1,
-        1
-      )
-    )
   );
 }
 
@@ -201,10 +143,8 @@ function namaBulanPanjang(
     {
       month:
         'long',
-
       year:
         'numeric',
-
       timeZone:
         'Asia/Jakarta',
     }
@@ -232,10 +172,8 @@ function tanggalWaktu(
     {
       dateStyle:
         'medium',
-
       timeStyle:
         'short',
-
       timeZone:
         'Asia/Jakarta',
     }
@@ -259,13 +197,10 @@ function tanggalPendek(
     {
       day:
         'numeric',
-
       month:
         'short',
-
       year:
         'numeric',
-
       timeZone:
         'Asia/Jakarta',
     }
@@ -302,86 +237,109 @@ function inisial(
 }
 
 
+/* =========================================================
+   INTERACTIVE SUMMARY CARD
+========================================================= */
+
 function KartuRingkasan({
   label,
   value,
   detail,
   Icon,
   tone = 'slate',
+  onClick,
 }) {
   const toneClass =
     {
       indigo: {
         bg:
           'bg-indigo-50',
-
         icon:
           'text-indigo-600',
-
         value:
           'text-indigo-700',
+        hover:
+          'hover:border-indigo-200 hover:bg-indigo-50/30',
+        detail:
+          'text-indigo-500',
+        line:
+          'bg-indigo-500',
       },
 
       green: {
         bg:
           'bg-green-50',
-
         icon:
           'text-green-600',
-
         value:
           'text-green-700',
+        hover:
+          'hover:border-green-200 hover:bg-green-50/30',
+        detail:
+          'text-green-600',
+        line:
+          'bg-green-500',
       },
 
       amber: {
         bg:
           'bg-amber-50',
-
         icon:
           'text-amber-600',
-
         value:
           'text-amber-700',
+        hover:
+          'hover:border-amber-200 hover:bg-amber-50/30',
+        detail:
+          'text-amber-600',
+        line:
+          'bg-amber-500',
       },
 
       red: {
         bg:
           'bg-red-50',
-
         icon:
           'text-red-600',
-
         value:
           'text-red-700',
+        hover:
+          'hover:border-red-200 hover:bg-red-50/30',
+        detail:
+          'text-red-500',
+        line:
+          'bg-red-500',
       },
 
       slate: {
         bg:
           'bg-slate-50',
-
         icon:
           'text-slate-600',
-
         value:
           'text-slate-800',
+        hover:
+          'hover:border-slate-300 hover:bg-slate-50',
+        detail:
+          'text-slate-500',
+        line:
+          'bg-slate-400',
       },
     }[
       tone
-    ] ?? {
-      bg:
-        'bg-slate-50',
+    ];
 
-      icon:
-        'text-slate-600',
-
-      value:
-        'text-slate-800',
-    };
 
   return (
-    <div className="anim-up rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+    <button
+      type="button"
+      onClick={
+        onClick
+      }
+      className={`group anim-up card-hover relative w-full overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:scale-[0.99] ${toneClass.hover}`}
+    >
       <div className="flex items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
             {
               label
@@ -403,10 +361,23 @@ function KartuRingkasan({
               }
             </p>
           )}
+
+          <div
+            className={`mt-3 flex items-center gap-1 text-[10px] font-bold ${toneClass.detail}`}
+          >
+            Lihat detail
+
+            <ChevronRight
+              size={
+                13
+              }
+              className="transition-transform duration-200 group-hover:translate-x-1"
+            />
+          </div>
         </div>
 
         <div
-          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${toneClass.bg}`}
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-110 ${toneClass.bg}`}
         >
           <Icon
             size={
@@ -418,19 +389,33 @@ function KartuRingkasan({
           />
         </div>
       </div>
-    </div>
+
+      <div
+        className={`absolute bottom-0 left-0 h-0.5 w-0 transition-all duration-300 group-hover:w-full ${toneClass.line}`}
+      />
+    </button>
   );
 }
 
 
 export default function Statistik() {
-  const [
+  const {
+    filters,
+    updateFilter,
+    resetFilters,
+    toggleSort,
+  } =
+    useStatistikFilters();
+
+
+  const {
     rangeBulan,
-    setRangeBulan,
-  ] =
-    useState(
-      12
-    );
+    metric,
+    sortKey,
+    sortDirection,
+  } =
+    filters;
+
 
   const [
     data,
@@ -440,6 +425,7 @@ export default function Statistik() {
       null
     );
 
+
   const [
     loading,
     setLoading,
@@ -448,6 +434,7 @@ export default function Statistik() {
       true
     );
 
+
   const [
     error,
     setError,
@@ -455,6 +442,7 @@ export default function Statistik() {
     useState(
       null
     );
+
 
   const [
     generatedAt,
@@ -466,7 +454,36 @@ export default function Statistik() {
 
 
   /* =======================================================
-     DETAIL PENONAKTIFAN
+     GENERIC EXPLORER
+  ======================================================= */
+
+  const [
+    explorer,
+    setExplorer,
+  ] =
+    useState({
+      open:
+        false,
+
+      title:
+        '',
+
+      subtitle:
+        '',
+
+      rows:
+        [],
+
+      loading:
+        false,
+
+      error:
+        null,
+    });
+
+
+  /* =======================================================
+     SUSPENSION DETAIL EXISTING
   ======================================================= */
 
   const [
@@ -477,6 +494,7 @@ export default function Statistik() {
       null
     );
 
+
   const [
     detailSuspensi,
     setDetailSuspensi,
@@ -485,6 +503,7 @@ export default function Statistik() {
       []
     );
 
+
   const [
     loadingDetailSuspensi,
     setLoadingDetailSuspensi,
@@ -492,6 +511,7 @@ export default function Statistik() {
     useState(
       false
     );
+
 
   const [
     errorDetailSuspensi,
@@ -503,7 +523,7 @@ export default function Statistik() {
 
 
   /* =======================================================
-     LOAD STATISTIK
+     LOAD MAIN STATS
   ======================================================= */
 
   const muat =
@@ -516,6 +536,7 @@ export default function Statistik() {
         setError(
           null
         );
+
 
         const {
           data:
@@ -601,65 +622,31 @@ export default function Statistik() {
     data?.ringkasan ??
     {};
 
+
   const divisi =
     data?.divisi ??
     [];
+
 
   const bulanan =
     data?.bulanan ??
     [];
 
+
   const tahunan =
     data?.tahunan ??
     [];
+
 
   const instansi =
     data?.instansi ??
     [];
 
+
   const penonaktifan =
     data?.penonaktifan ??
     [];
 
-
-  const maxPendaftarBulanan =
-    useMemo(
-      () =>
-        Math.max(
-          ...bulanan.map(
-            (
-              item
-            ) =>
-              angka(
-                item.total_pendaftar
-              )
-          ),
-          1
-        ),
-      [
-        bulanan,
-      ]
-    );
-
-
-  const maxInstansi =
-    useMemo(
-      () =>
-        Math.max(
-          ...instansi.map(
-            (
-              item
-            ) =>
-              angka(
-                item.total_pendaftar
-              )
-          ),
-          1
-        ),
-      [
-        instansi,
-      ]
-    );
 
 
   const maxSuspensi =
@@ -699,7 +686,234 @@ export default function Statistik() {
 
 
   /* =======================================================
-     DETAIL PENONAKTIFAN
+     GENERIC EXPLORER
+  ======================================================= */
+
+  async function bukaExplorer({
+    kind,
+    title,
+    subtitle,
+    bulan =
+      null,
+    tahun =
+      'Semua',
+    divisi:
+      filterDivisi =
+        'Semua',
+    status =
+      'Semua',
+    alasan =
+      null,
+    instansi =
+      null,
+  }) {
+    setExplorer({
+      open:
+        true,
+
+      title,
+
+      subtitle,
+
+      rows:
+        [],
+
+      loading:
+        true,
+
+      error:
+        null,
+    });
+
+
+    try {
+      const rows =
+        await loadStatistikDetail({
+          kind,
+          bulan,
+          tahun,
+          divisi:
+            filterDivisi,
+          status,
+          alasan,
+          instansi,
+        });
+
+
+      setExplorer(
+        (
+          previous
+        ) => ({
+          ...previous,
+
+          rows,
+
+          loading:
+            false,
+
+          error:
+            null,
+        })
+      );
+    } catch (
+      err
+    ) {
+      console.error(
+        'Gagal memuat statistics explorer:',
+        err
+      );
+
+
+      setExplorer(
+        (
+          previous
+        ) => ({
+          ...previous,
+
+          rows:
+            [],
+
+          loading:
+            false,
+
+          error:
+            err?.message ??
+            'Gagal memuat detail statistik.',
+        })
+      );
+    }
+  }
+
+
+  function tutupExplorer() {
+    setExplorer(
+      (
+        previous
+      ) => ({
+        ...previous,
+
+        open:
+          false,
+      })
+    );
+  }
+
+
+  /* =======================================================
+     MONTHLY CHART CLICK
+  ======================================================= */
+
+  function bukaBulanDariGrafik(
+    item,
+    selectedMetric
+  ) {
+    const bulan =
+      item.bulan;
+
+
+    const periode =
+      namaBulanDetail(
+        bulan
+      );
+
+
+    const mapping = {
+      pendaftar: {
+        kind:
+          DETAIL_KIND.PENDAFTAR,
+
+        title:
+          `Pendaftar — ${periode}`,
+
+        subtitle:
+          `${angka(
+            item.total_pendaftar
+          )} pendaftar tercatat pada ${periode}.`,
+      },
+
+      diterima: {
+        kind:
+          DETAIL_KIND.DITERIMA,
+
+        title:
+          `Diterima — ${periode}`,
+
+        subtitle:
+          `${angka(
+            item.diterima
+          )} pengajuan berstatus Approved pada ${periode}.`,
+      },
+
+      pending: {
+        kind:
+          DETAIL_KIND.PENDING,
+
+        title:
+          `Pending — ${periode}`,
+
+        subtitle:
+          `${angka(
+            item.pending
+          )} pengajuan masih Pending pada ${periode}.`,
+      },
+
+      ditolak: {
+        kind:
+          DETAIL_KIND.DITOLAK,
+
+        title:
+          `Ditolak — ${periode}`,
+
+        subtitle:
+          `${angka(
+            item.ditolak
+          )} pengajuan berstatus Rejected pada ${periode}.`,
+      },
+
+      mulai: {
+        kind:
+          DETAIL_KIND.MULAI_MAGANG,
+
+        title:
+          `Mulai Magang — ${periode}`,
+
+        subtitle:
+          `${angka(
+            item.peserta_mulai
+          )} peserta memiliki tanggal mulai magang pada ${periode}.`,
+      },
+
+      nonaktif: {
+        kind:
+          DETAIL_KIND.PENONAKTIFAN,
+
+        title:
+          `Penonaktifan — ${periode}`,
+
+        subtitle:
+          `${angka(
+            item.penonaktifan
+          )} riwayat penonaktifan tercatat pada ${periode}.`,
+      },
+    };
+
+
+    const config =
+      mapping[
+        selectedMetric
+      ] ??
+      mapping.pendaftar;
+
+
+    bukaExplorer({
+      ...config,
+      bulan,
+    });
+  }
+
+
+  /* =======================================================
+     SUSPENSION DETAIL
   ======================================================= */
 
   async function bukaDetailPenonaktifan(
@@ -870,6 +1084,15 @@ export default function Statistik() {
             serta alasan
             penonaktifan.
           </p>
+
+          <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-bold text-indigo-600">
+            ✨ Statistik
+            interaktif —
+            klik kartu,
+            grafik, dan
+            data untuk
+            eksplorasi
+          </p>
         </div>
 
 
@@ -882,7 +1105,8 @@ export default function Statistik() {
               onChange={(
                 e
               ) =>
-                setRangeBulan(
+                updateFilter(
+                  'rangeBulan',
                   Number(
                     e.target
                       .value
@@ -909,7 +1133,9 @@ export default function Statistik() {
             </select>
 
             <ChevronDown
-              size={14}
+              size={
+                14
+              }
               className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
             />
           </div>
@@ -926,7 +1152,9 @@ export default function Statistik() {
             className="btn-press flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-600 shadow-sm transition hover:bg-slate-50 disabled:opacity-50"
           >
             <RefreshCw
-              size={15}
+              size={
+                15
+              }
               className={
                 loading
                   ? 'animate-spin'
@@ -955,14 +1183,16 @@ export default function Statistik() {
       {error && (
         <div className="anim-down mt-5 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4">
           <AlertTriangle
-            size={20}
+            size={
+              20
+            }
             className="mt-0.5 shrink-0 text-red-600"
           />
 
           <div>
             <p className="text-sm font-bold text-red-700">
-              Statistik
-              gagal dimuat
+              Statistik gagal
+              dimuat
             </p>
 
             <p className="mt-1 text-xs text-red-600">
@@ -981,16 +1211,25 @@ export default function Statistik() {
             {/* RINGKASAN PENDAFTARAN */}
 
             <section className="mt-7">
-              <div className="flex items-center gap-2">
-                <BarChart3
-                  size={18}
-                  className="text-indigo-600"
-                />
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <BarChart3
+                    size={
+                      18
+                    }
+                    className="text-indigo-600"
+                  />
 
-                <h2 className="text-base font-bold text-slate-800">
-                  Ringkasan
-                  Pendaftaran
-                </h2>
+                  <h2 className="text-base font-bold text-slate-800">
+                    Ringkasan
+                    Pendaftaran
+                  </h2>
+                </div>
+
+                <span className="hidden text-[10px] font-semibold text-slate-400 sm:block">
+                  Klik kartu
+                  untuk drill-down
+                </span>
               </div>
 
 
@@ -1007,7 +1246,20 @@ export default function Statistik() {
                     Users
                   }
                   tone="indigo"
+                  onClick={() =>
+                    bukaExplorer({
+                      kind:
+                        DETAIL_KIND.PENDAFTAR,
+
+                      title:
+                        'Total Pendaftar',
+
+                      subtitle:
+                        'Seluruh data pendaftaran yang tercatat di sistem.',
+                    })
+                  }
                 />
+
 
                 <KartuRingkasan
                   label="Pending"
@@ -1019,7 +1271,20 @@ export default function Statistik() {
                     Clock3
                   }
                   tone="amber"
+                  onClick={() =>
+                    bukaExplorer({
+                      kind:
+                        DETAIL_KIND.PENDING,
+
+                      title:
+                        'Pendaftar Pending',
+
+                      subtitle:
+                        'Pengajuan yang masih menunggu keputusan Admin.',
+                    })
+                  }
                 />
+
 
                 <KartuRingkasan
                   label="Diterima"
@@ -1033,7 +1298,20 @@ export default function Statistik() {
                     CheckCircle2
                   }
                   tone="green"
+                  onClick={() =>
+                    bukaExplorer({
+                      kind:
+                        DETAIL_KIND.DITERIMA,
+
+                      title:
+                        'Pendaftar Diterima',
+
+                      subtitle:
+                        'Pengajuan yang telah disetujui sebagai peserta magang.',
+                    })
+                  }
                 />
+
 
                 <KartuRingkasan
                   label="Ditolak"
@@ -1045,6 +1323,18 @@ export default function Statistik() {
                     CircleX
                   }
                   tone="red"
+                  onClick={() =>
+                    bukaExplorer({
+                      kind:
+                        DETAIL_KIND.DITOLAK,
+
+                      title:
+                        'Pendaftar Ditolak',
+
+                      subtitle:
+                        'Pengajuan yang telah diproses dengan status Rejected.',
+                    })
+                  }
                 />
               </div>
             </section>
@@ -1053,16 +1343,26 @@ export default function Statistik() {
             {/* PESERTA */}
 
             <section className="mt-7">
-              <div className="flex items-center gap-2">
-                <Activity
-                  size={18}
-                  className="text-indigo-600"
-                />
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <Activity
+                    size={
+                      18
+                    }
+                    className="text-indigo-600"
+                  />
 
-                <h2 className="text-base font-bold text-slate-800">
-                  Peserta
-                  Magang
-                </h2>
+                  <h2 className="text-base font-bold text-slate-800">
+                    Peserta
+                    Magang
+                  </h2>
+                </div>
+
+                <span className="hidden text-[10px] font-semibold text-slate-400 sm:block">
+                  Klik kartu
+                  untuk melihat
+                  peserta
+                </span>
               </div>
 
 
@@ -1077,7 +1377,20 @@ export default function Statistik() {
                     Users
                   }
                   tone="indigo"
+                  onClick={() =>
+                    bukaExplorer({
+                      kind:
+                        DETAIL_KIND.PESERTA,
+
+                      title:
+                        'Seluruh Peserta Magang',
+
+                      subtitle:
+                        'Seluruh peserta magang yang tercatat pada sistem.',
+                    })
+                  }
                 />
+
 
                 <KartuRingkasan
                   label="Aktif"
@@ -1089,7 +1402,20 @@ export default function Statistik() {
                     Activity
                   }
                   tone="green"
+                  onClick={() =>
+                    bukaExplorer({
+                      kind:
+                        DETAIL_KIND.AKTIF,
+
+                      title:
+                        'Peserta Aktif',
+
+                      subtitle:
+                        'Peserta yang sedang menjalani periode magang.',
+                    })
+                  }
                 />
+
 
                 <KartuRingkasan
                   label="Selesai"
@@ -1103,7 +1429,20 @@ export default function Statistik() {
                     CheckCircle2
                   }
                   tone="slate"
+                  onClick={() =>
+                    bukaExplorer({
+                      kind:
+                        DETAIL_KIND.SELESAI,
+
+                      title:
+                        'Peserta Selesai',
+
+                      subtitle:
+                        'Peserta dengan status magang Completed.',
+                    })
+                  }
                 />
+
 
                 <KartuRingkasan
                   label="Nonaktif"
@@ -1117,721 +1456,360 @@ export default function Statistik() {
                     UserMinus
                   }
                   tone="red"
+                  onClick={() =>
+                    bukaExplorer({
+                      kind:
+                        DETAIL_KIND.NONAKTIF,
+
+                      title:
+                        'Peserta Nonaktif',
+
+                      subtitle:
+                        'Peserta dengan status magang Dropped.',
+                    })
+                  }
                 />
               </div>
             </section>
 
 
-            {/* PER DIVISI */}
+            {/* =============================================
+                FASE 5-8E
+                INTERACTIVE DIVISION + INSTITUTION ANALYTICS
+            ============================================= */}
 
-            <section className="mt-8">
-              <div>
-                <h2 className="text-base font-bold text-slate-800">
-                  🧩 Statistik
-                  per Divisi
-                </h2>
+            <DivisionInstitutionAnalytics
+              divisions={
+                divisi
+              }
+              institutions={
+                instansi
+              }
+              onOpenDivision={(
+                item
+              ) =>
+                bukaExplorer({
+                  kind:
+                    DETAIL_KIND.PESERTA,
 
-                <p className="mt-1 text-xs text-slate-400">
-                  Pendaftar dan
-                  peserta berdasarkan
-                  pilihan divisi.
-                </p>
-              </div>
+                  divisi:
+                    item.divisi,
 
+                  title:
+                    `Peserta — ${item.divisi}`,
 
-              <div className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2">
-                {divisi.map(
-                  (
-                    item,
-                    index
-                  ) => {
-                    const meta =
-                      DIVISI_META[
-                        item.divisi
-                      ] ?? {
-                        ikon:
-                          '📁',
+                  subtitle:
+                    `Seluruh peserta magang yang tercatat pada divisi ${item.divisi}.`,
+                })
+              }
+              onOpenDivisionMetric={(
+                item,
+                selectedMetric
+              ) => {
+                const mapping = {
+                  pendaftar: {
+                    kind:
+                      DETAIL_KIND.PENDAFTAR,
+                    label:
+                      'Pendaftar',
+                  },
 
-                        label:
-                          item.divisi,
+                  pending: {
+                    kind:
+                      DETAIL_KIND.PENDING,
+                    label:
+                      'Pending',
+                  },
 
-                        deskripsi:
-                          '',
-                      };
+                  diterima: {
+                    kind:
+                      DETAIL_KIND.DITERIMA,
+                    label:
+                      'Diterima',
+                  },
 
+                  aktif: {
+                    kind:
+                      DETAIL_KIND.AKTIF,
+                    label:
+                      'Peserta Aktif',
+                  },
 
-                    return (
-                      <div
-                        key={
-                          item.divisi
-                        }
-                        className="anim-up rounded-2xl border border-slate-100 bg-white p-5 shadow-sm"
-                        style={{
-                          animationDelay:
-                            `${index * 70}ms`,
-                        }}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-center gap-3">
-                            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-xl">
-                              {
-                                meta.ikon
-                              }
-                            </span>
+                  selesai: {
+                    kind:
+                      DETAIL_KIND.SELESAI,
+                    label:
+                      'Peserta Selesai',
+                  },
 
-                            <div>
-                              <p className="font-bold text-slate-800">
-                                {
-                                  meta.label
-                                }
-                              </p>
+                  nonaktif: {
+                    kind:
+                      DETAIL_KIND.NONAKTIF,
+                    label:
+                      'Peserta Nonaktif',
+                  },
+                };
 
-                              <p className="text-[11px] text-slate-400">
-                                {
-                                  meta.deskripsi
-                                }
-                              </p>
-                            </div>
-                          </div>
+                const config =
+                  mapping[
+                    selectedMetric
+                  ];
 
+                if (!config) {
+                  return;
+                }
 
-                          <div className="text-right">
-                            <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">
-                              Nilai
-                              rata-rata
-                            </p>
+                bukaExplorer({
+                  kind:
+                    config.kind,
 
-                            <p className="text-lg font-extrabold text-indigo-600">
-                              {nilai(
-                                item.rata_nilai
-                              )}
-                            </p>
-                          </div>
-                        </div>
+                  divisi:
+                    item.divisi,
 
+                  title:
+                    `${config.label} — ${item.divisi}`,
 
-                        <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                          <div className="rounded-xl bg-indigo-50 p-3">
-                            <p className="text-[9px] font-bold uppercase text-indigo-400">
-                              Pendaftar
-                            </p>
+                  subtitle:
+                    `${config.label} pada divisi ${item.divisi}.`,
+                });
+              }}
+              onOpenInstitution={(
+                item
+              ) =>
+                bukaExplorer({
+                  kind:
+                    DETAIL_KIND.INSTANSI,
 
-                            <p className="mt-1 text-xl font-extrabold text-indigo-700">
-                              {angka(
-                                item.pendaftar
-                              )}
-                            </p>
-                          </div>
+                  instansi:
+                    item.instansi,
 
-                          <div className="rounded-xl bg-green-50 p-3">
-                            <p className="text-[9px] font-bold uppercase text-green-500">
-                              Aktif
-                            </p>
+                  title:
+                    item.instansi,
 
-                            <p className="mt-1 text-xl font-extrabold text-green-700">
-                              {angka(
-                                item.aktif
-                              )}
-                            </p>
-                          </div>
+                  subtitle:
+                    `Seluruh pendaftar yang berasal dari ${item.instansi}.`,
+                })
+              }
+              onOpenInstitutionMetric={(
+                item,
+                selectedMetric
+              ) => {
+                const mapping = {
+                  peserta: {
+                    kind:
+                      DETAIL_KIND.PESERTA,
+                    label:
+                      'Peserta',
+                  },
 
-                          <div className="rounded-xl bg-blue-50 p-3">
-                            <p className="text-[9px] font-bold uppercase text-blue-400">
-                              Selesai
-                            </p>
+                  diterima: {
+                    kind:
+                      DETAIL_KIND.DITERIMA,
+                    label:
+                      'Diterima',
+                  },
 
-                            <p className="mt-1 text-xl font-extrabold text-blue-700">
-                              {angka(
-                                item.selesai
-                              )}
-                            </p>
-                          </div>
+                  pending: {
+                    kind:
+                      DETAIL_KIND.PENDING,
+                    label:
+                      'Pending',
+                  },
 
-                          <div className="rounded-xl bg-red-50 p-3">
-                            <p className="text-[9px] font-bold uppercase text-red-400">
-                              Nonaktif
-                            </p>
+                  ditolak: {
+                    kind:
+                      DETAIL_KIND.DITOLAK,
+                    label:
+                      'Ditolak',
+                  },
+                };
 
-                            <p className="mt-1 text-xl font-extrabold text-red-700">
-                              {angka(
-                                item.nonaktif
-                              )}
-                            </p>
-                          </div>
-                        </div>
+                const config =
+                  mapping[
+                    selectedMetric
+                  ];
 
+                if (!config) {
+                  return;
+                }
 
-                        <div className="mt-4 flex flex-wrap gap-2 text-[10px] font-semibold">
-                          <span className="rounded-full bg-amber-50 px-2.5 py-1 text-amber-600">
-                            Pending{' '}
+                bukaExplorer({
+                  kind:
+                    config.kind,
 
-                            {angka(
-                              item.pending
-                            )}
-                          </span>
+                  instansi:
+                    item.instansi,
 
-                          <span className="rounded-full bg-green-50 px-2.5 py-1 text-green-600">
-                            Diterima{' '}
+                  title:
+                    `${config.label} — ${item.instansi}`,
 
-                            {angka(
-                              item.diterima
-                            )}
-                          </span>
-
-                          <span className="rounded-full bg-red-50 px-2.5 py-1 text-red-600">
-                            Ditolak{' '}
-
-                            {angka(
-                              item.ditolak
-                            )}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  }
-                )}
-              </div>
-            </section>
-
-
-            {/* GRAFIK BULANAN */}
-
-            <section className="mt-8 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:p-5">
-              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h2 className="font-bold text-slate-800">
-                    📈 Pendaftaran
-                    Bulanan
-                  </h2>
-
-                  <p className="mt-1 text-xs text-slate-400">
-                    {
-                      rangeBulan
-                    }{' '}
-                    bulan terakhir
-                    berdasarkan
-                    waktu
-                    pendaftaran.
-                  </p>
-                </div>
+                  subtitle:
+                    `${config.label} yang berasal dari ${item.instansi}.`,
+                });
+              }}
+            />
 
 
-                <div className="flex items-center gap-1 text-[10px] font-medium text-slate-400">
-                  <TrendingUp
-                    size={13}
-                  />
+            {/* =============================================
+                FASE 5-8C
+                MODERN MONTHLY CHART
+            ============================================= */}
 
-                  Maksimum{' '}
-
-                  {
-                    maxPendaftarBulanan
-                  }{' '}
-
-                  pendaftar/bulan
-                </div>
-              </div>
-
-
-              {bulanan.length ===
-              0 ? (
-                <p className="py-10 text-center text-sm text-slate-400">
-                  Belum ada
-                  data
-                  pendaftaran.
-                </p>
-              ) : (
-                <div className="mt-6 overflow-x-auto pb-2">
-                  <div
-                    className="flex min-w-max items-end gap-3"
-                    style={{
-                      minHeight:
-                        '230px',
-                    }}
-                  >
-                    {bulanan.map(
-                      (
-                        item
-                      ) => {
-                        const total =
-                          angka(
-                            item.total_pendaftar
-                          );
-
-                        const diterima =
-                          angka(
-                            item.diterima
-                          );
-
-                        const ditolak =
-                          angka(
-                            item.ditolak
-                          );
-
-                        const pending =
-                          angka(
-                            item.pending
-                          );
+            <div className="mt-8">
+              <MonthlyRegistrationChart
+                data={
+                  bulanan
+                }
+                metric={
+                  metric
+                }
+                onMetricChange={(
+                  nextMetric
+                ) =>
+                  updateFilter(
+                    'metric',
+                    nextMetric
+                  )
+                }
+                onMonthClick={
+                  bukaBulanDariGrafik
+                }
+              />
+            </div>
 
 
-                        const tinggi =
-                          Math.max(
-                            (
-                              total /
-                              maxPendaftarBulanan
-                            ) *
-                              150,
+            {/* =============================================
+                FASE 5-8D
+                INTERACTIVE MONTHLY RECAP
+            ============================================= */}
 
-                            total >
-                            0
-                              ? 8
-                              : 2
-                          );
+            <div className="mt-6">
+              <MonthlyRecapTable
+                data={
+                  bulanan
+                }
+                filters={
+                  filters
+                }
+                updateFilter={
+                  updateFilter
+                }
+                resetFilters={
+                  resetFilters
+                }
+                sortKey={
+                  sortKey
+                }
+                sortDirection={
+                  sortDirection
+                }
+                onSort={
+                  toggleSort
+                }
+                onMetricClick={
+                  bukaBulanDariGrafik
+                }
+                onDivisionClick={(
+                  item,
+                  division
+                ) =>
+                  bukaExplorer({
+                    kind:
+                      DETAIL_KIND.PENDAFTAR,
 
+                    bulan:
+                      item.bulan,
 
-                        return (
-                          <div
-                            key={
-                              item.bulan
-                            }
-                            className="flex w-16 shrink-0 flex-col items-center"
-                          >
-                            <p className="mb-1 text-xs font-extrabold text-slate-700">
-                              {
-                                total
-                              }
-                            </p>
+                    divisi:
+                      division,
 
-                            <div className="flex h-40 w-full items-end justify-center">
-                              <div
-                                className="w-8 rounded-t-lg bg-indigo-500 transition-all"
-                                style={{
-                                  height:
-                                    `${tinggi}px`,
-                                }}
-                                title={`${namaBulanPanjang(
-                                  item.bulan
-                                )}: ${total} pendaftar`}
-                              />
-                            </div>
+                    title:
+                      `${division} — ${namaBulanDetail(
+                        item.bulan
+                      )}`,
 
-                            <p className="mt-2 whitespace-nowrap text-[10px] font-bold text-slate-500">
-                              {namaBulan(
-                                item.bulan
-                              )}
-                            </p>
-
-                            <p className="mt-1 text-center text-[9px] leading-relaxed text-slate-400">
-                              <span className="text-green-600">
-                                {
-                                  diterima
-                                }{' '}
-                                diterima
-                              </span>
-
-                              <br />
-
-                              <span className="text-amber-600">
-                                {
-                                  pending
-                                }{' '}
-                                pending
-                              </span>
-
-                              <br />
-
-                              <span className="text-red-500">
-                                {
-                                  ditolak
-                                }{' '}
-                                ditolak
-                              </span>
-                            </p>
-                          </div>
-                        );
-                      }
-                    )}
-                  </div>
-                </div>
-              )}
-            </section>
+                    subtitle:
+                      `Pendaftar divisi ${division} pada ${namaBulanDetail(
+                        item.bulan
+                      )}.`,
+                  })
+                }
+              />
+            </div>
 
 
-            {/* REKAP BULANAN */}
+            {/* REKAP TAHUNAN */}
 
             <section className="mt-6 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
               <div className="border-b border-slate-100 p-4 sm:p-5">
                 <h2 className="font-bold text-slate-800">
-                  Rekap
-                  Bulanan
-                  Lengkap
+                  🗓️ Rekap Tahunan
                 </h2>
 
                 <p className="mt-1 text-xs text-slate-400">
-                  Jumlah
-                  pendaftar,
-                  peserta mulai,
-                  dan
-                  penonaktifan.
+                  Akumulasi pendaftaran setiap tahun.
                 </p>
               </div>
 
-
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[850px] text-left text-xs">
-                  <thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-400">
-                    <tr>
-                      <th className="px-4 py-3">
-                        Bulan
-                      </th>
-
-                      <th className="px-4 py-3 text-center">
-                        Pendaftar
-                      </th>
-
-                      <th className="px-4 py-3 text-center">
-                        Diterima
-                      </th>
-
-                      <th className="px-4 py-3 text-center">
-                        Pending
-                      </th>
-
-                      <th className="px-4 py-3 text-center">
-                        Ditolak
-                      </th>
-
-                      <th className="px-4 py-3 text-center">
-                        Mulai
-                        Magang
-                      </th>
-
-                      <th className="px-4 py-3 text-center">
-                        Nonaktif
-                      </th>
-
-                      <th className="px-4 py-3">
-                        Divisi
-                      </th>
-                    </tr>
-                  </thead>
-
-
-                  <tbody className="divide-y divide-slate-100">
-                    {[
-                      ...bulanan,
-                    ]
-                      .reverse()
-                      .map(
-                        (
-                          item
-                        ) => (
-                          <tr
-                            key={
-                              item.bulan
-                            }
-                            className="hover:bg-slate-50/60"
-                          >
-                            <td className="whitespace-nowrap px-4 py-3 font-bold text-slate-700">
-                              {namaBulanPanjang(
-                                item.bulan
-                              )}
-                            </td>
-
-                            <td className="px-4 py-3 text-center font-bold text-indigo-600">
-                              {angka(
-                                item.total_pendaftar
-                              )}
-                            </td>
-
-                            <td className="px-4 py-3 text-center text-green-600">
-                              {angka(
-                                item.diterima
-                              )}
-                            </td>
-
-                            <td className="px-4 py-3 text-center text-amber-600">
-                              {angka(
-                                item.pending
-                              )}
-                            </td>
-
-                            <td className="px-4 py-3 text-center text-red-500">
-                              {angka(
-                                item.ditolak
-                              )}
-                            </td>
-
-                            <td className="px-4 py-3 text-center font-semibold text-slate-600">
-                              {angka(
-                                item.peserta_mulai
-                              )}
-                            </td>
-
-                            <td className="px-4 py-3 text-center text-red-500">
-                              {angka(
-                                item.penonaktifan
-                              )}
-                            </td>
-
-                            <td className="px-4 py-3">
-                              <div className="flex flex-wrap gap-1 text-[9px]">
-                                <span className="rounded bg-slate-100 px-1.5 py-0.5">
-                                  A{' '}
-                                  {angka(
-                                    item.div_admin
-                                  )}
-                                </span>
-
-                                <span className="rounded bg-slate-100 px-1.5 py-0.5">
-                                  S{' '}
-                                  {angka(
-                                    item.div_sosmed
-                                  )}
-                                </span>
-
-                                <span className="rounded bg-slate-100 px-1.5 py-0.5">
-                                  M{' '}
-                                  {angka(
-                                    item.div_marketplace
-                                  )}
-                                </span>
-
-                                <span className="rounded bg-slate-100 px-1.5 py-0.5">
-                                  W{' '}
-                                  {angka(
-                                    item.div_webdev
-                                  )}
-                                </span>
-                              </div>
-                            </td>
-                          </tr>
-                        )
-                      )}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-
-
-            {/* TAHUNAN + INSTANSI */}
-
-            <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
-              <section className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
-                <div className="border-b border-slate-100 p-4 sm:p-5">
-                  <h2 className="font-bold text-slate-800">
-                    🗓️ Rekap
-                    Tahunan
-                  </h2>
-
-                  <p className="mt-1 text-xs text-slate-400">
-                    Akumulasi
-                    pendaftaran
-                    setiap tahun.
-                  </p>
-                </div>
-
-
-                {tahunan.length ===
-                0 ? (
-                  <p className="py-10 text-center text-sm text-slate-400">
-                    Belum ada
-                    data.
-                  </p>
-                ) : (
-                  <div className="divide-y divide-slate-100">
-                    {tahunan.map(
-                      (
-                        item
-                      ) => (
-                        <div
-                          key={
+              {tahunan.length ===
+              0 ? (
+                <p className="py-10 text-center text-sm text-slate-400">
+                  Belum ada data.
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 divide-y divide-slate-100 md:grid-cols-2 md:divide-x md:divide-y-0 xl:grid-cols-3">
+                  {tahunan.map((
+                    item
+                  ) => (
+                    <div
+                      key={
+                        item.tahun
+                      }
+                      className="flex items-center justify-between gap-4 p-4"
+                    >
+                      <div>
+                        <p className="text-lg font-extrabold text-slate-800">
+                          {
                             item.tahun
                           }
-                          className="flex items-center justify-between gap-4 p-4"
-                        >
-                          <div>
-                            <p className="text-lg font-extrabold text-slate-800">
-                              {
-                                item.tahun
-                              }
-                            </p>
+                        </p>
 
-                            <p className="text-[10px] text-slate-400">
-                              Total{' '}
-
-                              {angka(
-                                item.total_pendaftar
-                              )}{' '}
-
-                              pendaftar
-                            </p>
-                          </div>
-
-
-                          <div className="flex flex-wrap justify-end gap-1.5 text-[10px] font-bold">
-                            <span className="rounded-full bg-green-50 px-2.5 py-1 text-green-600">
-                              ✓{' '}
-
-                              {angka(
-                                item.diterima
-                              )}
-                            </span>
-
-                            <span className="rounded-full bg-amber-50 px-2.5 py-1 text-amber-600">
-                              ⏳{' '}
-
-                              {angka(
-                                item.pending
-                              )}
-                            </span>
-
-                            <span className="rounded-full bg-red-50 px-2.5 py-1 text-red-600">
-                              ✕{' '}
-
-                              {angka(
-                                item.ditolak
-                              )}
-                            </span>
-                          </div>
-                        </div>
-                      )
-                    )}
-                  </div>
-                )}
-              </section>
-
-
-              {/* INSTANSI */}
-
-              <section className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
-                <div className="border-b border-slate-100 p-4 sm:p-5">
-                  <div className="flex items-center gap-2">
-                    <Building2
-                      size={18}
-                      className="text-indigo-600"
-                    />
-
-                    <h2 className="font-bold text-slate-800">
-                      Asal
-                      Instansi
-                    </h2>
-                  </div>
-
-                  <p className="mt-1 text-xs text-slate-400">
-                    Maksimal 50
-                    instansi
-                    berdasarkan
-                    jumlah
-                    pendaftar.
-                  </p>
-                </div>
-
-
-                {instansi.length ===
-                0 ? (
-                  <p className="py-10 text-center text-sm text-slate-400">
-                    Belum ada
-                    data
-                    instansi.
-                  </p>
-                ) : (
-                  <div className="max-h-[480px] divide-y divide-slate-100 overflow-y-auto">
-                    {instansi.map(
-                      (
-                        item,
-                        i
-                      ) => {
-                        const total =
-                          angka(
+                        <p className="text-[10px] text-slate-400">
+                          Total{' '}
+                          {angka(
                             item.total_pendaftar
-                          );
+                          )}{' '}
+                          pendaftar
+                        </p>
+                      </div>
 
+                      <div className="flex flex-wrap justify-end gap-1.5 text-[10px] font-bold">
+                        <span className="rounded-full bg-green-50 px-2.5 py-1 text-green-600">
+                          ✓{' '}
+                          {angka(
+                            item.diterima
+                          )}
+                        </span>
 
-                        const width =
-                          Math.max(
-                            (
-                              total /
-                              maxInstansi
-                            ) *
-                              100,
-                            2
-                          );
+                        <span className="rounded-full bg-amber-50 px-2.5 py-1 text-amber-600">
+                          ⏳{' '}
+                          {angka(
+                            item.pending
+                          )}
+                        </span>
 
-
-                        return (
-                          <div
-                            key={`${item.instansi}-${i}`}
-                            className="p-4"
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0">
-                                <p className="truncate text-sm font-bold text-slate-700">
-                                  {
-                                    item.instansi
-                                  }
-                                </p>
-
-                                <p className="mt-0.5 text-[10px] text-slate-400">
-                                  {angka(
-                                    item.peserta
-                                  )}{' '}
-                                  menjadi
-                                  peserta
-                                </p>
-                              </div>
-
-                              <span className="shrink-0 text-sm font-extrabold text-indigo-600">
-                                {
-                                  total
-                                }
-                              </span>
-                            </div>
-
-
-                            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
-                              <div
-                                className="h-full rounded-full bg-indigo-500"
-                                style={{
-                                  width:
-                                    `${width}%`,
-                                }}
-                              />
-                            </div>
-
-
-                            <div className="mt-2 flex flex-wrap gap-2 text-[9px] font-semibold">
-                              <span className="text-green-600">
-                                Diterima{' '}
-
-                                {angka(
-                                  item.diterima
-                                )}
-                              </span>
-
-                              <span className="text-amber-600">
-                                Pending{' '}
-
-                                {angka(
-                                  item.pending
-                                )}
-                              </span>
-
-                              <span className="text-red-500">
-                                Ditolak{' '}
-
-                                {angka(
-                                  item.ditolak
-                                )}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      }
-                    )}
-                  </div>
-                )}
-              </section>
-            </div>
+                        <span className="rounded-full bg-red-50 px-2.5 py-1 text-red-600">
+                          ✕{' '}
+                          {angka(
+                            item.ditolak
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
 
 
             {/* PENONAKTIFAN */}
@@ -1840,7 +1818,9 @@ export default function Statistik() {
               <div className="border-b border-slate-100 p-4 sm:p-5">
                 <div className="flex items-center gap-2">
                   <UserMinus
-                    size={18}
+                    size={
+                      18
+                    }
                     className="text-red-500"
                   />
 
@@ -1849,7 +1829,6 @@ export default function Statistik() {
                     Penonaktifan
                   </h2>
                 </div>
-
 
                 <p className="mt-1 text-xs leading-relaxed text-slate-400">
                   Klik salah
@@ -1919,20 +1898,18 @@ export default function Statistik() {
                                 }
                               </p>
 
-
                               <p className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-slate-400 transition group-hover:text-red-500">
-                                Klik
-                                untuk
-                                lihat
-                                peserta
+                                Klik untuk
+                                lihat peserta
 
                                 <ChevronRight
-                                  size={12}
+                                  size={
+                                    12
+                                  }
                                   className="transition-transform duration-200 group-hover:translate-x-0.5"
                                 />
                               </p>
                             </div>
-
 
                             <span className="shrink-0 rounded-full bg-red-100 px-2.5 py-1 text-xs font-extrabold text-red-600">
                               {
@@ -1958,16 +1935,12 @@ export default function Statistik() {
                               {persen(
                                 item.persentase
                               )}{' '}
-
-                              dari
-                              seluruh
+                              dari seluruh
                               penonaktifan
                             </span>
 
-
                             <span>
                               terakhir{' '}
-
                               {item.terakhir
                                 ? tanggalPendek(
                                     item.terakhir
@@ -1984,230 +1957,6 @@ export default function Statistik() {
             </section>
 
 
-            {/* MODAL DETAIL PENONAKTIFAN */}
-
-            <Modal
-              open={
-                !!suspensiTerpilih
-              }
-              onClose={
-                tutupDetailPenonaktifan
-              }
-              title={`Peserta — ${
-                suspensiTerpilih
-                  ?.alasan ??
-                'Penonaktifan'
-              }`}
-            >
-              {suspensiTerpilih && (
-                <div>
-                  <div className="rounded-xl border border-red-100 bg-red-50 p-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-red-400">
-                          Alasan
-                          Penonaktifan
-                        </p>
-
-                        <p className="mt-1 break-words text-sm font-extrabold leading-relaxed text-red-700">
-                          {
-                            suspensiTerpilih.alasan
-                          }
-                        </p>
-                      </div>
-
-
-                      <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-xs font-extrabold text-red-600 shadow-sm ring-1 ring-red-100">
-                        {angka(
-                          suspensiTerpilih.jumlah
-                        )}{' '}
-                        riwayat
-                      </span>
-                    </div>
-
-
-                    <p className="mt-2 text-[10px] leading-relaxed text-red-500">
-                      Daftar
-                      berikut
-                      berasal
-                      langsung
-                      dari
-                      riwayat
-                      penonaktifan
-                      dengan
-                      alasan yang
-                      sama.
-                    </p>
-                  </div>
-
-
-                  {loadingDetailSuspensi ? (
-                    <div className="flex flex-col items-center justify-center py-10">
-                      <span className="inline-block h-7 w-7 animate-spin rounded-full border-[3px] border-slate-200 border-t-red-500" />
-
-                      <p className="mt-3 text-xs font-medium text-slate-400">
-                        Memuat
-                        peserta...
-                      </p>
-                    </div>
-                  ) : errorDetailSuspensi ? (
-                    <div className="mt-3 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3">
-                      <AlertTriangle
-                        size={16}
-                        className="mt-0.5 shrink-0 text-red-600"
-                      />
-
-                      <p className="text-xs leading-relaxed text-red-600">
-                        {
-                          errorDetailSuspensi
-                        }
-                      </p>
-                    </div>
-                  ) : detailSuspensi.length ===
-                    0 ? (
-                    <div className="py-10 text-center">
-                      <p className="text-3xl">
-                        📭
-                      </p>
-
-                      <p className="mt-2 text-sm font-semibold text-slate-500">
-                        Detail
-                        peserta
-                        tidak
-                        ditemukan
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="mt-3 space-y-2">
-                      {detailSuspensi.map(
-                        (
-                          row,
-                          index
-                        ) => {
-                          const intern =
-                            row.interns;
-
-
-                          return (
-                            <div
-                              key={
-                                row.id
-                              }
-                              className="anim-in rounded-xl border border-slate-100 bg-white p-3 shadow-sm"
-                              style={{
-                                animationDelay:
-                                  `${index * 45}ms`,
-                              }}
-                            >
-                              <div className="flex items-start gap-3">
-                                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-red-500 to-rose-600 text-xs font-extrabold text-white shadow-sm shadow-red-500/20">
-                                  {inisial(
-                                    intern?.nama_lengkap
-                                  )}
-                                </span>
-
-
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex flex-wrap items-start justify-between gap-2">
-                                    <div className="min-w-0">
-                                      <p className="truncate text-sm font-bold text-slate-800">
-                                        {intern?.nama_lengkap ??
-                                          'Peserta tidak ditemukan'}
-                                      </p>
-
-                                      <p className="mt-0.5 truncate text-[10px] text-slate-400">
-                                        {intern?.email ??
-                                          'Email tidak tersedia'}
-                                      </p>
-                                    </div>
-
-
-                                    <span className="shrink-0 rounded-full bg-red-50 px-2 py-1 text-[9px] font-extrabold text-red-600">
-                                      NONAKTIF
-                                    </span>
-                                  </div>
-
-
-                                  <div className="mt-2 flex flex-wrap gap-1.5">
-                                    {intern?.divisi && (
-                                      <span className="rounded-full bg-indigo-50 px-2 py-1 text-[9px] font-bold text-indigo-600">
-                                        🧩{' '}
-                                        {
-                                          intern.divisi
-                                        }
-                                      </span>
-                                    )}
-
-
-                                    {intern?.instansi && (
-                                      <span className="max-w-full truncate rounded-full bg-slate-100 px-2 py-1 text-[9px] font-semibold text-slate-500">
-                                        🏫{' '}
-
-                                        {
-                                          intern.instansi
-                                        }
-                                      </span>
-                                    )}
-
-
-                                    <span
-                                      className={`max-w-full truncate rounded-full px-2 py-1 text-[9px] font-semibold ${
-                                        intern?.jurusan
-                                          ? 'bg-purple-50 text-purple-700'
-                                          : 'bg-amber-50 text-amber-600'
-                                      }`}
-                                    >
-                                      🎓{' '}
-
-                                      {intern?.jurusan ??
-                                        'Jurusan belum diisi'}
-                                    </span>
-                                  </div>
-
-
-                                  <div className="mt-2 rounded-lg bg-slate-50 px-2.5 py-2">
-                                    <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">
-                                      Dinonaktifkan
-                                    </p>
-
-                                    <p className="mt-0.5 text-[10px] font-semibold text-slate-600">
-                                      {tanggalWaktu(
-                                        row.created_at
-                                      )}
-                                    </p>
-                                  </div>
-
-
-                                  {intern?.id && (
-                                    <Link
-                                      to={`/admin/peserta/${intern.id}`}
-                                      onClick={
-                                        tutupDetailPenonaktifan
-                                      }
-                                      className="btn-press mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 px-3 py-2 text-[10px] font-bold text-indigo-600 transition hover:bg-indigo-100"
-                                    >
-                                      Lihat
-                                      Detail
-                                      Peserta
-
-                                      <ExternalLink
-                                        size={12}
-                                      />
-                                    </Link>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        }
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-            </Modal>
-
-
             <div className="mt-6 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3">
               <p className="text-xs leading-relaxed text-amber-700">
                 💡 Statistik
@@ -2221,16 +1970,245 @@ export default function Statistik() {
                 data dummy
                 tersebut
                 sebaiknya
-                dibersihkan
-                agar rekap
-                produksi
-                dimulai dari
-                data peserta
-                asli.
+                dibersihkan.
               </p>
             </div>
           </>
         )}
+
+
+      {/* GENERIC EXPLORER */}
+
+      <StatistikDetailModal
+        open={
+          explorer.open
+        }
+        onClose={
+          tutupExplorer
+        }
+        title={
+          explorer.title
+        }
+        subtitle={
+          explorer.subtitle
+        }
+        rows={
+          explorer.rows
+        }
+        loading={
+          explorer.loading
+        }
+        error={
+          explorer.error
+        }
+      />
+
+
+      {/* LEGACY SUSPENSION DETAIL */}
+
+      <Modal
+        open={
+          !!suspensiTerpilih
+        }
+        onClose={
+          tutupDetailPenonaktifan
+        }
+        title={`Peserta — ${
+          suspensiTerpilih
+            ?.alasan ??
+          'Penonaktifan'
+        }`}
+      >
+        {suspensiTerpilih && (
+          <div>
+            <div className="rounded-xl border border-red-100 bg-red-50 p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-red-400">
+                    Alasan
+                    Penonaktifan
+                  </p>
+
+                  <p className="mt-1 break-words text-sm font-extrabold leading-relaxed text-red-700">
+                    {
+                      suspensiTerpilih.alasan
+                    }
+                  </p>
+                </div>
+
+                <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-xs font-extrabold text-red-600 shadow-sm ring-1 ring-red-100">
+                  {angka(
+                    suspensiTerpilih.jumlah
+                  )}{' '}
+                  riwayat
+                </span>
+              </div>
+            </div>
+
+
+            {loadingDetailSuspensi ? (
+              <div className="flex flex-col items-center justify-center py-10">
+                <span className="inline-block h-7 w-7 animate-spin rounded-full border-[3px] border-slate-200 border-t-red-500" />
+
+                <p className="mt-3 text-xs font-medium text-slate-400">
+                  Memuat
+                  peserta...
+                </p>
+              </div>
+            ) : errorDetailSuspensi ? (
+              <div className="mt-3 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3">
+                <AlertTriangle
+                  size={
+                    16
+                  }
+                  className="mt-0.5 shrink-0 text-red-600"
+                />
+
+                <p className="text-xs leading-relaxed text-red-600">
+                  {
+                    errorDetailSuspensi
+                  }
+                </p>
+              </div>
+            ) : detailSuspensi.length ===
+              0 ? (
+              <div className="py-10 text-center">
+                <p className="text-3xl">
+                  📭
+                </p>
+
+                <p className="mt-2 text-sm font-semibold text-slate-500">
+                  Detail peserta
+                  tidak ditemukan
+                </p>
+              </div>
+            ) : (
+              <div className="mt-3 space-y-2">
+                {detailSuspensi.map(
+                  (
+                    row,
+                    index
+                  ) => {
+                    const intern =
+                      row.interns;
+
+
+                    return (
+                      <div
+                        key={
+                          row.id
+                        }
+                        className="anim-in rounded-xl border border-slate-100 bg-white p-3 shadow-sm"
+                        style={{
+                          animationDelay:
+                            `${index * 45}ms`,
+                        }}
+                      >
+                        <div className="flex items-start gap-3">
+                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-red-500 to-rose-600 text-xs font-extrabold text-white shadow-sm shadow-red-500/20">
+                            {inisial(
+                              intern?.nama_lengkap
+                            )}
+                          </span>
+
+
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-bold text-slate-800">
+                                  {intern?.nama_lengkap ??
+                                    'Peserta tidak ditemukan'}
+                                </p>
+
+                                <p className="mt-0.5 truncate text-[10px] text-slate-400">
+                                  {intern?.email ??
+                                    'Email tidak tersedia'}
+                                </p>
+                              </div>
+
+                              <span className="shrink-0 rounded-full bg-red-50 px-2 py-1 text-[9px] font-extrabold text-red-600">
+                                NONAKTIF
+                              </span>
+                            </div>
+
+
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              {intern?.divisi && (
+                                <span className="rounded-full bg-indigo-50 px-2 py-1 text-[9px] font-bold text-indigo-600">
+                                  🧩{' '}
+                                  {
+                                    intern.divisi
+                                  }
+                                </span>
+                              )}
+
+
+                              {intern?.instansi && (
+                                <span className="max-w-full truncate rounded-full bg-slate-100 px-2 py-1 text-[9px] font-semibold text-slate-500">
+                                  🏫{' '}
+                                  {
+                                    intern.instansi
+                                  }
+                                </span>
+                              )}
+
+
+                              <span
+                                className={`max-w-full truncate rounded-full px-2 py-1 text-[9px] font-semibold ${
+                                  intern?.jurusan
+                                    ? 'bg-purple-50 text-purple-700'
+                                    : 'bg-amber-50 text-amber-600'
+                                }`}
+                              >
+                                🎓{' '}
+                                {intern?.jurusan ??
+                                  'Jurusan belum diisi'}
+                              </span>
+                            </div>
+
+
+                            <div className="mt-2 rounded-lg bg-slate-50 px-2.5 py-2">
+                              <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">
+                                Dinonaktifkan
+                              </p>
+
+                              <p className="mt-0.5 text-[10px] font-semibold text-slate-600">
+                                {tanggalWaktu(
+                                  row.created_at
+                                )}
+                              </p>
+                            </div>
+
+
+                            {intern?.id && (
+                              <Link
+                                to={`/admin/peserta/${intern.id}`}
+                                onClick={
+                                  tutupDetailPenonaktifan
+                                }
+                                className="btn-press mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 px-3 py-2 text-[10px] font-bold text-indigo-600 transition hover:bg-indigo-100"
+                              >
+                                Lihat Detail
+                                Peserta
+
+                                <ExternalLink
+                                  size={
+                                    12
+                                  }
+                                />
+                              </Link>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

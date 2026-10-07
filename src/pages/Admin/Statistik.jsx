@@ -9,7 +9,6 @@ import {
   AlertTriangle,
   BarChart3,
   CheckCircle2,
-  ChevronDown,
   ChevronRight,
   CircleX,
   Clock3,
@@ -27,6 +26,9 @@ import MonthlyRegistrationChart from '../../components/MonthlyRegistrationChart'
 import MonthlyRecapTable from '../../components/MonthlyRecapTable';
 import DivisionInstitutionAnalytics from '../../components/DivisionInstitutionAnalytics';
 import YearlySuspensionAnalytics from '../../components/YearlySuspensionAnalytics';
+import JurusanAnalytics from '../../components/JurusanAnalytics';
+import GlobalStatisticsFilter from '../../components/GlobalStatisticsFilter';
+import ScrollReveal from '../../components/ScrollReveal';
 
 import {
   useStatistikFilters,
@@ -45,7 +47,7 @@ function angka(
   const n =
     Number(
       value ??
-        0
+      0
     );
 
   return Number.isFinite(
@@ -64,19 +66,15 @@ function persen(
       value
     );
 
-  if (
-    !Number.isFinite(
-      n
-    )
-  ) {
-    return '0%';
-  }
-
-  return `${Number(
-    n.toFixed(
-      2
-    )
-  )}%`;
+  return Number.isFinite(
+    n
+  )
+    ? `${Number(
+        n.toFixed(
+          2
+        )
+      )}%`
+    : '0%';
 }
 
 
@@ -90,22 +88,20 @@ function nilai(
     return '—';
   }
 
+
   const n =
     Number(
       value
     );
 
-  if (
-    !Number.isFinite(
-      n
-    )
-  ) {
-    return '—';
-  }
 
-  return n.toFixed(
-    2
-  );
+  return Number.isFinite(
+    n
+  )
+    ? n.toFixed(
+        2
+      )
+    : '—';
 }
 
 
@@ -115,6 +111,7 @@ function tanggalWaktu(
   if (!iso) {
     return '—';
   }
+
 
   return new Intl.DateTimeFormat(
     'id-ID',
@@ -137,7 +134,122 @@ function tanggalWaktu(
 
 
 /* =========================================================
-   INTERACTIVE SUMMARY CARD
+   COUNT UP
+========================================================= */
+
+function CountUp({
+  value,
+}) {
+  const target =
+    angka(
+      value
+    );
+
+
+  const [
+    display,
+    setDisplay,
+  ] =
+    useState(
+      0
+    );
+
+
+  useEffect(
+    () => {
+      const reduced =
+        window.matchMedia?.(
+          '(prefers-reduced-motion: reduce)'
+        )?.matches;
+
+
+      if (
+        reduced
+      ) {
+        setDisplay(
+          target
+        );
+
+        return undefined;
+      }
+
+
+      let frame;
+
+      const start =
+        performance.now();
+
+
+      const duration =
+        650;
+
+
+      const animate = (
+        now
+      ) => {
+        const progress =
+          Math.min(
+            (
+              now -
+              start
+            ) /
+              duration,
+            1
+          );
+
+
+        const eased =
+          1 -
+          Math.pow(
+            1 -
+              progress,
+            3
+          );
+
+
+        setDisplay(
+          Math.round(
+            target *
+            eased
+          )
+        );
+
+
+        if (
+          progress <
+          1
+        ) {
+          frame =
+            requestAnimationFrame(
+              animate
+            );
+        }
+      };
+
+
+      frame =
+        requestAnimationFrame(
+          animate
+        );
+
+
+      return () =>
+        cancelAnimationFrame(
+          frame
+        );
+    },
+    [
+      target,
+    ]
+  );
+
+
+  return display;
+}
+
+
+/* =========================================================
+   SUMMARY CARD
 ========================================================= */
 
 function KartuRingkasan({
@@ -151,103 +263,53 @@ function KartuRingkasan({
   const toneClass =
     {
       indigo: {
-        bg:
-          'bg-indigo-50',
-
-        icon:
-          'text-indigo-600',
-
-        value:
-          'text-indigo-700',
-
+        bg: 'bg-indigo-50',
+        icon: 'text-indigo-600',
+        value: 'text-indigo-700',
         hover:
           'hover:border-indigo-200 hover:bg-indigo-50/30',
-
-        detail:
-          'text-indigo-500',
-
-        line:
-          'bg-indigo-500',
+        detail: 'text-indigo-500',
+        line: 'bg-indigo-500',
       },
 
       green: {
-        bg:
-          'bg-green-50',
-
-        icon:
-          'text-green-600',
-
-        value:
-          'text-green-700',
-
+        bg: 'bg-green-50',
+        icon: 'text-green-600',
+        value: 'text-green-700',
         hover:
           'hover:border-green-200 hover:bg-green-50/30',
-
-        detail:
-          'text-green-600',
-
-        line:
-          'bg-green-500',
+        detail: 'text-green-600',
+        line: 'bg-green-500',
       },
 
       amber: {
-        bg:
-          'bg-amber-50',
-
-        icon:
-          'text-amber-600',
-
-        value:
-          'text-amber-700',
-
+        bg: 'bg-amber-50',
+        icon: 'text-amber-600',
+        value: 'text-amber-700',
         hover:
           'hover:border-amber-200 hover:bg-amber-50/30',
-
-        detail:
-          'text-amber-600',
-
-        line:
-          'bg-amber-500',
+        detail: 'text-amber-600',
+        line: 'bg-amber-500',
       },
 
       red: {
-        bg:
-          'bg-red-50',
-
-        icon:
-          'text-red-600',
-
-        value:
-          'text-red-700',
-
+        bg: 'bg-red-50',
+        icon: 'text-red-600',
+        value: 'text-red-700',
         hover:
           'hover:border-red-200 hover:bg-red-50/30',
-
-        detail:
-          'text-red-500',
-
-        line:
-          'bg-red-500',
+        detail: 'text-red-500',
+        line: 'bg-red-500',
       },
 
       slate: {
-        bg:
-          'bg-slate-50',
-
-        icon:
-          'text-slate-600',
-
-        value:
-          'text-slate-800',
-
+        bg: 'bg-slate-50',
+        icon: 'text-slate-600',
+        value: 'text-slate-800',
         hover:
           'hover:border-slate-300 hover:bg-slate-50',
-
-        detail:
-          'text-slate-500',
-
-        line:
-          'bg-slate-400',
+        detail: 'text-slate-500',
+        line: 'bg-slate-400',
       },
     }[
       tone
@@ -260,22 +322,22 @@ function KartuRingkasan({
       onClick={
         onClick
       }
-      className={`group anim-up card-hover relative w-full overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:scale-[0.99] ${toneClass.hover}`}
+      className={`group relative w-full overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg active:translate-y-0 active:scale-[0.99] ${toneClass.hover}`}
     >
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+        <div>
           <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
             {
               label
             }
           </p>
 
-          <p
-            className={`mt-2 text-3xl font-extrabold ${toneClass.value}`}
-          >
-            {
-              value
-            }
+          <p className={`mt-2 text-3xl font-extrabold tabular-nums ${toneClass.value}`}>
+            <CountUp
+              value={
+                value
+              }
+            />
           </p>
 
           {detail && (
@@ -286,28 +348,20 @@ function KartuRingkasan({
             </p>
           )}
 
-          <div
-            className={`mt-3 flex items-center gap-1 text-[10px] font-bold ${toneClass.detail}`}
-          >
+          <div className={`mt-3 flex items-center gap-1 text-[10px] font-bold ${toneClass.detail}`}>
             Lihat detail
 
             <ChevronRight
-              size={
-                13
-              }
-              className="transition-transform duration-200 group-hover:translate-x-1"
+              size={13}
+              className="transition-transform duration-300 group-hover:translate-x-1"
             />
           </div>
         </div>
 
 
-        <div
-          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-110 ${toneClass.bg}`}
-        >
+        <div className={`flex h-11 w-11 items-center justify-center rounded-xl transition-transform duration-300 group-hover:rotate-3 group-hover:scale-110 ${toneClass.bg}`}>
           <Icon
-            size={
-              21
-            }
+            size={21}
             className={
               toneClass.icon
             }
@@ -316,9 +370,7 @@ function KartuRingkasan({
       </div>
 
 
-      <div
-        className={`absolute bottom-0 left-0 h-0.5 w-0 transition-all duration-300 group-hover:w-full ${toneClass.line}`}
-      />
+      <div className={`absolute bottom-0 left-0 h-0.5 w-0 transition-all duration-500 group-hover:w-full ${toneClass.line}`} />
     </button>
   );
 }
@@ -330,17 +382,26 @@ export default function Statistik() {
     updateFilter,
     resetFilters,
     toggleSort,
+    activeFilterCount,
   } =
     useStatistikFilters();
 
 
   const {
-    rangeBulan,
     metric,
     sortKey,
     sortDirection,
   } =
     filters;
+
+
+  const [
+    pageReady,
+    setPageReady,
+  ] =
+    useState(
+      false
+    );
 
 
   const [
@@ -379,37 +440,202 @@ export default function Statistik() {
     );
 
 
-  /* =======================================================
-     GENERIC STATISTICS EXPLORER
-  ======================================================= */
+  const [
+    yearOptions,
+    setYearOptions,
+  ] =
+    useState(
+      []
+    );
+
+
+  const [
+    jurusanOptions,
+    setJurusanOptions,
+  ] =
+    useState(
+      []
+    );
+
 
   const [
     explorer,
     setExplorer,
   ] =
     useState({
-      open:
-        false,
-
-      title:
-        '',
-
-      subtitle:
-        '',
-
-      rows:
-        [],
-
-      loading:
-        false,
-
-      error:
-        null,
+      open: false,
+      title: '',
+      subtitle: '',
+      rows: [],
+      loading: false,
+      error: null,
     });
 
 
   /* =======================================================
-     LOAD MAIN STATISTICS
+     PAGE ENTRANCE
+  ======================================================= */
+
+  useEffect(
+    () => {
+      const reduced =
+        window.matchMedia?.(
+          '(prefers-reduced-motion: reduce)'
+        )?.matches;
+
+
+      if (
+        reduced
+      ) {
+        setPageReady(
+          true
+        );
+
+        return;
+      }
+
+
+      const frame =
+        requestAnimationFrame(
+          () => {
+            setPageReady(
+              true
+            );
+          }
+        );
+
+
+      return () =>
+        cancelAnimationFrame(
+          frame
+        );
+    },
+    []
+  );
+
+
+  /* =======================================================
+     FILTER OPTIONS
+  ======================================================= */
+
+  const muatFilterOptions =
+    useCallback(
+      async () => {
+        try {
+          const [
+            statisticsResult,
+            jurusanResult,
+          ] =
+            await Promise.all([
+              supabase.rpc(
+                'get_admin_statistics',
+                {
+                  p_jumlah_bulan:
+                    36,
+                }
+              ),
+
+              supabase.rpc(
+                'get_admin_jurusan_statistics'
+              ),
+            ]);
+
+
+          if (
+            !statisticsResult.error
+          ) {
+            setYearOptions(
+              Array.from(
+                new Set(
+                  (
+                    statisticsResult
+                      .data
+                      ?.tahunan ??
+                    []
+                  )
+                    .map(
+                      (item) =>
+                        Number(
+                          item.tahun
+                        )
+                    )
+                    .filter(
+                      Number.isFinite
+                    )
+                )
+              ).sort(
+                (
+                  a,
+                  b
+                ) =>
+                  b -
+                  a
+              )
+            );
+          }
+
+
+          if (
+            !jurusanResult.error
+          ) {
+            setJurusanOptions(
+              Array.from(
+                new Set(
+                  (
+                    jurusanResult
+                      .data
+                      ?.jurusan ??
+                    []
+                  )
+                    .map(
+                      (item) =>
+                        item.jurusan
+                    )
+                    .filter(
+                      Boolean
+                    )
+                )
+              ).sort(
+                (
+                  a,
+                  b
+                ) =>
+                  String(
+                    a
+                  ).localeCompare(
+                    String(
+                      b
+                    ),
+                    'id-ID'
+                  )
+              )
+            );
+          }
+        } catch (
+          err
+        ) {
+          console.error(
+            'Gagal memuat pilihan filter:',
+            err
+          );
+        }
+      },
+      []
+    );
+
+
+  useEffect(
+    () => {
+      muatFilterOptions();
+    },
+    [
+      muatFilterOptions,
+    ]
+  );
+
+
+  /* =======================================================
+     LOAD
   ======================================================= */
 
   const muat =
@@ -424,72 +650,111 @@ export default function Statistik() {
         );
 
 
-        const {
-          data:
-            hasil,
+        try {
+          const {
+            data:
+              hasil,
 
-          error:
-            rpcError,
-        } =
-          await supabase.rpc(
-            'get_admin_statistics',
-            {
-              p_jumlah_bulan:
-                Number(
-                  rangeBulan
-                ),
-            }
+            error:
+              rpcError,
+          } =
+            await supabase.rpc(
+              'get_admin_statistics_filtered',
+              {
+                p_jumlah_bulan:
+                  Number(
+                    filters.rangeBulan
+                  ),
+
+                p_tahun:
+                  filters.tahun ===
+                  'Semua'
+                    ? null
+                    : Number(
+                        filters.tahun
+                      ),
+
+                p_bulan:
+                  filters.bulan ===
+                  'Semua'
+                    ? null
+                    : Number(
+                        filters.bulan
+                      ),
+
+                p_divisi:
+                  filters.divisi ===
+                  'Semua'
+                    ? null
+                    : filters.divisi,
+
+                p_jurusan:
+                  filters.jurusan ===
+                  'Semua'
+                    ? null
+                    : filters.jurusan,
+
+                p_status_pendaftaran:
+                  filters.status ===
+                  'Semua'
+                    ? null
+                    : filters.status,
+
+                p_status_magang:
+                  filters.statusMagang ===
+                  'Semua'
+                    ? null
+                    : filters.statusMagang,
+              }
+            );
+
+
+          if (
+            rpcError
+          ) {
+            throw rpcError;
+          }
+
+
+          if (
+            hasil?.error
+          ) {
+            throw new Error(
+              hasil.message ??
+              'Gagal mengambil statistik.'
+            );
+          }
+
+
+          setData(
+            hasil
           );
 
-
-        if (
-          rpcError
-        ) {
-          setError(
-            rpcError.message
-          );
-
-          setLoading(
-            false
-          );
-
-          return;
-        }
-
-
-        if (
-          hasil?.error
-        ) {
-          setError(
-            hasil.message ??
-              'Gagal mengambil statistik administrasi.'
-          );
-
-          setLoading(
-            false
-          );
-
-          return;
-        }
-
-
-        setData(
-          hasil
-        );
-
-
-        setGeneratedAt(
-          hasil?.generated_at ??
+          setGeneratedAt(
+            hasil.generated_at ??
             null
-        );
-
-
-        setLoading(
-          false
-        );
+          );
+        } catch (
+          err
+        ) {
+          setError(
+            err?.message ??
+            'Gagal mengambil statistik.'
+          );
+        } finally {
+          setLoading(
+            false
+          );
+        }
       },
       [
-        rangeBulan,
+        filters.rangeBulan,
+        filters.tahun,
+        filters.bulan,
+        filters.divisi,
+        filters.jurusan,
+        filters.status,
+        filters.statusMagang,
       ]
     );
 
@@ -529,6 +794,16 @@ export default function Statistik() {
     [];
 
 
+  const jurusanData =
+    data?.jurusan ??
+    [];
+
+
+  const jurusanSummary =
+    data?.jurusan_ringkasan ??
+    {};
+
+
   const penonaktifan =
     data?.penonaktifan ??
     [];
@@ -537,7 +812,8 @@ export default function Statistik() {
   const tingkatDiterima =
     angka(
       ringkasan.pendaftaran_total
-    ) > 0
+    ) >
+    0
       ? (
           angka(
             ringkasan.pendaftaran_diterima
@@ -550,50 +826,63 @@ export default function Statistik() {
       : 0;
 
 
-  /* =======================================================
-     OPEN GENERIC EXPLORER
-  ======================================================= */
+  function globalDetailFilter() {
+    return {
+      tahun:
+        filters.tahun,
+
+      bulanNomor:
+        filters.bulan,
+
+      divisi:
+        filters.divisi,
+
+      jurusan:
+        filters.jurusan,
+
+      statusPendaftaran:
+        filters.status,
+
+      statusMagang:
+        filters.statusMagang,
+    };
+  }
+
 
   async function bukaExplorer({
     kind,
     title,
     subtitle,
-
-    bulan =
-      null,
-
-    tahun =
-      'Semua',
-
-    divisi:
-      filterDivisi =
-        'Semua',
-
-    status =
-      'Semua',
-
-    alasan =
-      null,
-
-    instansi =
-      null,
+    bulan = null,
+    tahun,
+    bulanNomor,
+    divisi: overrideDivisi,
+    jurusan: overrideJurusan,
+    statusPendaftaran,
+    statusMagang,
+    alasan = null,
+    instansi = null,
   }) {
+    const global =
+      globalDetailFilter();
+
+
+    const exactMonth =
+      Boolean(
+        bulan &&
+        /^\d{4}-\d{2}$/.test(
+          bulan
+        )
+      );
+
+
     setExplorer({
-      open:
-        true,
-
+      open: true,
       title,
-
       subtitle,
-
-      rows:
-        [],
-
-      loading:
-        true,
-
-      error:
-        null,
+      rows: [],
+      loading: true,
+      error: null,
     });
 
 
@@ -601,14 +890,46 @@ export default function Statistik() {
       const rows =
         await loadStatistikDetail({
           kind,
-          bulan,
-          tahun,
+
+          bulan:
+            exactMonth
+              ? bulan
+              : null,
+
+          tahun:
+            exactMonth
+              ? 'Semua'
+              : (
+                  tahun ??
+                  global.tahun
+                ),
+
+          bulanNomor:
+            exactMonth
+              ? 'Semua'
+              : (
+                  bulanNomor ??
+                  global.bulanNomor
+                ),
 
           divisi:
-            filterDivisi,
+            overrideDivisi ??
+            global.divisi,
 
-          status,
+          jurusan:
+            overrideJurusan ??
+            global.jurusan,
+
+          statusPendaftaran:
+            statusPendaftaran ??
+            global.statusPendaftaran,
+
+          statusMagang:
+            statusMagang ??
+            global.statusMagang,
+
           alasan,
+
           instansi,
         });
 
@@ -618,40 +939,24 @@ export default function Statistik() {
           previous
         ) => ({
           ...previous,
-
           rows,
-
-          loading:
-            false,
-
-          error:
-            null,
+          loading: false,
+          error: null,
         })
       );
     } catch (
       err
     ) {
-      console.error(
-        'Gagal memuat statistics explorer:',
-        err
-      );
-
-
       setExplorer(
         (
           previous
         ) => ({
           ...previous,
-
-          rows:
-            [],
-
-          loading:
-            false,
-
+          rows: [],
+          loading: false,
           error:
             err?.message ??
-              'Gagal memuat detail statistik.',
+            'Gagal memuat detail statistik.',
         })
       );
     }
@@ -664,110 +969,58 @@ export default function Statistik() {
         previous
       ) => ({
         ...previous,
-
-        open:
-          false,
+        open: false,
       })
     );
   }
 
 
-  /* =======================================================
-     MONTHLY CHART / RECAP DRILL-DOWN
-  ======================================================= */
-
   function bukaBulanDariGrafik(
     item,
     selectedMetric
   ) {
-    const bulan =
-      item.bulan;
-
-
     const periode =
       namaBulanDetail(
-        bulan
+        item.bulan
       );
 
 
     const mapping = {
-      pendaftar: {
-        kind:
-          DETAIL_KIND.PENDAFTAR,
+      pendaftar: [
+        DETAIL_KIND.PENDAFTAR,
+        'Pendaftar',
+        item.total_pendaftar,
+      ],
 
-        title:
-          `Pendaftar — ${periode}`,
+      diterima: [
+        DETAIL_KIND.DITERIMA,
+        'Diterima',
+        item.diterima,
+      ],
 
-        subtitle:
-          `${angka(
-            item.total_pendaftar
-          )} pendaftar tercatat pada ${periode}.`,
-      },
+      pending: [
+        DETAIL_KIND.PENDING,
+        'Pending',
+        item.pending,
+      ],
 
-      diterima: {
-        kind:
-          DETAIL_KIND.DITERIMA,
+      ditolak: [
+        DETAIL_KIND.DITOLAK,
+        'Ditolak',
+        item.ditolak,
+      ],
 
-        title:
-          `Diterima — ${periode}`,
+      mulai: [
+        DETAIL_KIND.MULAI_MAGANG,
+        'Mulai Magang',
+        item.peserta_mulai,
+      ],
 
-        subtitle:
-          `${angka(
-            item.diterima
-          )} pengajuan berstatus Approved pada ${periode}.`,
-      },
-
-      pending: {
-        kind:
-          DETAIL_KIND.PENDING,
-
-        title:
-          `Pending — ${periode}`,
-
-        subtitle:
-          `${angka(
-            item.pending
-          )} pengajuan masih Pending pada ${periode}.`,
-      },
-
-      ditolak: {
-        kind:
-          DETAIL_KIND.DITOLAK,
-
-        title:
-          `Ditolak — ${periode}`,
-
-        subtitle:
-          `${angka(
-            item.ditolak
-          )} pengajuan berstatus Rejected pada ${periode}.`,
-      },
-
-      mulai: {
-        kind:
-          DETAIL_KIND.MULAI_MAGANG,
-
-        title:
-          `Mulai Magang — ${periode}`,
-
-        subtitle:
-          `${angka(
-            item.peserta_mulai
-          )} peserta memiliki tanggal mulai magang pada ${periode}.`,
-      },
-
-      nonaktif: {
-        kind:
-          DETAIL_KIND.PENONAKTIFAN,
-
-        title:
-          `Penonaktifan — ${periode}`,
-
-        subtitle:
-          `${angka(
-            item.penonaktifan
-          )} riwayat penonaktifan tercatat pada ${periode}.`,
-      },
+      nonaktif: [
+        DETAIL_KIND.PENONAKTIFAN,
+        'Penonaktifan',
+        item.penonaktifan,
+      ],
     };
 
 
@@ -779,16 +1032,121 @@ export default function Statistik() {
 
 
     bukaExplorer({
-      ...config,
+      kind:
+        config[
+          0
+        ],
 
-      bulan,
+      bulan:
+        item.bulan,
+
+      title:
+        `${config[1]} — ${periode}`,
+
+      subtitle:
+        `${angka(
+          config[
+            2
+          ]
+        )} data sesuai Filter Statistik aktif.`,
     });
   }
 
 
-  /* =======================================================
-     LOADING
-  ======================================================= */
+  function bukaJurusan(
+    item
+  ) {
+    bukaExplorer({
+      kind:
+        DETAIL_KIND.JURUSAN,
+
+      jurusan:
+        item.jurusan,
+
+      title:
+        `Peserta — ${item.jurusan}`,
+
+      subtitle:
+        'Data mengikuti Filter Statistik aktif.',
+    });
+  }
+
+
+  function bukaMetricJurusan(
+    item,
+    selectedMetric
+  ) {
+    const mapping = {
+      pendaftar: [
+        DETAIL_KIND.PENDAFTAR,
+        'Pendaftar',
+      ],
+
+      pending: [
+        DETAIL_KIND.PENDING,
+        'Pending',
+      ],
+
+      diterima: [
+        DETAIL_KIND.DITERIMA,
+        'Diterima',
+      ],
+
+      ditolak: [
+        DETAIL_KIND.DITOLAK,
+        'Ditolak',
+      ],
+
+      peserta: [
+        DETAIL_KIND.PESERTA,
+        'Peserta',
+      ],
+
+      aktif: [
+        DETAIL_KIND.AKTIF,
+        'Peserta Aktif',
+      ],
+
+      selesai: [
+        DETAIL_KIND.SELESAI,
+        'Peserta Selesai',
+      ],
+
+      nonaktif: [
+        DETAIL_KIND.NONAKTIF,
+        'Peserta Nonaktif',
+      ],
+    };
+
+
+    const config =
+      mapping[
+        selectedMetric
+      ];
+
+
+    if (!config) {
+      return;
+    }
+
+
+    bukaExplorer({
+      kind:
+        config[
+          0
+        ],
+
+      jurusan:
+        item.jurusan,
+
+      title:
+        `${config[1]} — ${item.jurusan}`,
+
+      subtitle:
+        'Data mengikuti Filter Statistik aktif.',
+    });
+  }
+
 
   if (
     loading &&
@@ -797,40 +1155,30 @@ export default function Statistik() {
     return (
       <div>
         <div className="skeleton h-8 w-64 rounded-xl" />
-
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {Array.from({
-            length:
-              8,
-          }).map(
-            (
-              _,
-              index
-            ) => (
-              <div
-                key={
-                  index
-                }
-                className="skeleton h-32 rounded-2xl"
-              />
-            )
-          )}
-        </div>
-
-        <div className="mt-6 skeleton h-80 rounded-2xl" />
+        <div className="mt-6 skeleton h-52 rounded-3xl" />
+        <div className="mt-6 skeleton h-96 rounded-3xl" />
       </div>
     );
   }
 
 
   return (
-    <div>
+    <div
+      className="transition-[opacity,transform] duration-300 ease-out"
+      style={{
+  opacity:
+    pageReady
+      ? 1
+      : 0,
 
-      {/* =================================================
-          HEADER
-      ================================================= */}
+  transform:
+    pageReady
+      ? 'translate3d(0,0,0)'
+      : 'translate3d(0,8px,0)',
+}}
+    >
 
-      <div className="anim-up flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">
             Statistik Administrasi
@@ -840,92 +1188,45 @@ export default function Statistik() {
             Rekap pendaftaran,
             peserta magang,
             divisi,
+            jurusan,
             instansi,
             serta alasan
             penonaktifan.
           </p>
 
-          <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-bold text-indigo-600">
-            ✨ Statistik interaktif —
-            klik kartu, grafik,
-            angka, atau kategori
-            untuk eksplorasi
+          <p className="mt-2 inline-flex rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-bold text-indigo-600">
+            ✨ Semua statistik mengikuti Global Filter
           </p>
         </div>
 
 
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <select
-              value={
-                rangeBulan
-              }
-              onChange={(
-                e
-              ) =>
-                updateFilter(
-                  'rangeBulan',
-
-                  Number(
-                    e.target.value
-                  )
-                )
-              }
-              className="appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pl-3 pr-9 text-xs font-bold text-slate-600 shadow-sm outline-none focus:border-indigo-500"
-            >
-              <option value={6}>
-                6 bulan
-              </option>
-
-              <option value={12}>
-                12 bulan
-              </option>
-
-              <option value={24}>
-                24 bulan
-              </option>
-
-              <option value={36}>
-                36 bulan
-              </option>
-            </select>
-
-            <ChevronDown
-              size={14}
-              className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
-            />
-          </div>
-
-
-          <button
-            type="button"
-            onClick={
-              muat
-            }
-            disabled={
+        <button
+          type="button"
+          onClick={
+            muat
+          }
+          disabled={
+            loading
+          }
+          className="group flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-600 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md disabled:opacity-50"
+        >
+          <RefreshCw
+            size={15}
+            className={
               loading
+                ? 'animate-spin'
+                : 'transition-transform duration-500 group-hover:rotate-180'
             }
-            className="btn-press flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-600 shadow-sm transition hover:bg-slate-50 disabled:opacity-50"
-          >
-            <RefreshCw
-              size={15}
-              className={
-                loading
-                  ? 'animate-spin'
-                  : ''
-              }
-            />
+          />
 
-            Refresh
-          </button>
-        </div>
+          Refresh
+        </button>
       </div>
 
 
       {generatedAt && (
-        <p className="mt-2 text-[10px] font-medium text-slate-400">
+        <p className="mt-2 text-[10px] text-slate-400">
           Data diperbarui:{' '}
-
           {tanggalWaktu(
             generatedAt
           )}
@@ -933,11 +1234,42 @@ export default function Statistik() {
       )}
 
 
+      <ScrollReveal
+        delay={
+          80
+        }
+      >
+        <GlobalStatisticsFilter
+          filters={
+            filters
+          }
+          updateFilter={
+            updateFilter
+          }
+          resetFilters={
+            resetFilters
+          }
+          activeFilterCount={
+            activeFilterCount
+          }
+          years={
+            yearOptions
+          }
+          jurusanOptions={
+            jurusanOptions
+          }
+          loading={
+            loading
+          }
+        />
+      </ScrollReveal>
+
+
       {error && (
-        <div className="anim-down mt-5 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4">
+        <div className="mt-5 flex gap-3 rounded-xl border border-red-200 bg-red-50 p-4">
           <AlertTriangle
             size={20}
-            className="mt-0.5 shrink-0 text-red-600"
+            className="text-red-600"
           />
 
           <div>
@@ -959,703 +1291,683 @@ export default function Statistik() {
         data && (
           <>
 
-            {/* =============================================
-                SUMMARY PENDAFTARAN
-            ============================================= */}
-
-            <section className="mt-7">
-              <div className="flex items-center justify-between gap-3">
+            <ScrollReveal>
+              <section className="mt-7">
                 <div className="flex items-center gap-2">
                   <BarChart3
                     size={18}
                     className="text-indigo-600"
                   />
 
-                  <h2 className="text-base font-bold text-slate-800">
+                  <h2 className="font-bold text-slate-800">
                     Ringkasan Pendaftaran
                   </h2>
                 </div>
 
-                <span className="hidden text-[10px] font-semibold text-slate-400 sm:block">
-                  Klik kartu untuk drill-down
-                </span>
-              </div>
 
+                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  {[
+                    {
+                      label:
+                        'Total Pendaftar',
 
-              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <KartuRingkasan
-                  label="Total Pendaftar"
-                  value={angka(
-                    ringkasan.pendaftaran_total
-                  )}
-                  detail={`${angka(
-                    ringkasan.pendaftaran_tahun_ini
-                  )} pendaftar tahun ini`}
-                  Icon={
-                    Users
-                  }
-                  tone="indigo"
-                  onClick={() =>
-                    bukaExplorer({
+                      value:
+                        ringkasan.pendaftaran_total,
+
+                      detail:
+                        'Sesuai filter aktif',
+
+                      Icon:
+                        Users,
+
+                      tone:
+                        'indigo',
+
                       kind:
                         DETAIL_KIND.PENDAFTAR,
 
                       title:
                         'Total Pendaftar',
+                    },
 
-                      subtitle:
-                        'Seluruh data pendaftaran yang tercatat di sistem.',
-                    })
-                  }
-                />
+                    {
+                      label:
+                        'Pending',
 
+                      value:
+                        ringkasan.pendaftaran_pending,
 
-                <KartuRingkasan
-                  label="Pending"
-                  value={angka(
-                    ringkasan.pendaftaran_pending
-                  )}
-                  detail="Menunggu keputusan admin"
-                  Icon={
-                    Clock3
-                  }
-                  tone="amber"
-                  onClick={() =>
-                    bukaExplorer({
+                      detail:
+                        'Status Pending',
+
+                      Icon:
+                        Clock3,
+
+                      tone:
+                        'amber',
+
                       kind:
                         DETAIL_KIND.PENDING,
 
                       title:
                         'Pendaftar Pending',
+                    },
 
-                      subtitle:
-                        'Pengajuan yang masih menunggu keputusan Admin.',
-                    })
-                  }
-                />
+                    {
+                      label:
+                        'Diterima',
 
+                      value:
+                        ringkasan.pendaftaran_diterima,
 
-                <KartuRingkasan
-                  label="Diterima"
-                  value={angka(
-                    ringkasan.pendaftaran_diterima
-                  )}
-                  detail={`${persen(
-                    tingkatDiterima
-                  )} dari seluruh pendaftar`}
-                  Icon={
-                    CheckCircle2
-                  }
-                  tone="green"
-                  onClick={() =>
-                    bukaExplorer({
+                      detail:
+                        `${persen(
+                          tingkatDiterima
+                        )} dari data terfilter`,
+
+                      Icon:
+                        CheckCircle2,
+
+                      tone:
+                        'green',
+
                       kind:
                         DETAIL_KIND.DITERIMA,
 
                       title:
                         'Pendaftar Diterima',
+                    },
 
-                      subtitle:
-                        'Pengajuan yang telah disetujui sebagai peserta magang.',
-                    })
-                  }
-                />
+                    {
+                      label:
+                        'Ditolak',
 
+                      value:
+                        ringkasan.pendaftaran_ditolak,
 
-                <KartuRingkasan
-                  label="Ditolak"
-                  value={angka(
-                    ringkasan.pendaftaran_ditolak
-                  )}
-                  detail="Pengajuan tidak diterima"
-                  Icon={
-                    CircleX
-                  }
-                  tone="red"
-                  onClick={() =>
-                    bukaExplorer({
+                      detail:
+                        'Status Rejected',
+
+                      Icon:
+                        CircleX,
+
+                      tone:
+                        'red',
+
                       kind:
                         DETAIL_KIND.DITOLAK,
 
                       title:
                         'Pendaftar Ditolak',
+                    },
+                  ].map(
+                    (
+                      item,
+                      index
+                    ) => (
+                      <ScrollReveal
+                        key={
+                          item.label
+                        }
+                        delay={
+                          index *
+                          90
+                        }
+                        distance={
+                          16
+                        }
+                      >
+                        <KartuRingkasan
+                          {...item}
+                          onClick={() =>
+                            bukaExplorer({
+                              kind:
+                                item.kind,
 
-                      subtitle:
-                        'Pengajuan yang telah diproses dengan status Rejected.',
-                    })
-                  }
-                />
-              </div>
-            </section>
+                              title:
+                                item.title,
+
+                              subtitle:
+                                'Data mengikuti Filter Statistik aktif.',
+                            })
+                          }
+                        />
+                      </ScrollReveal>
+                    )
+                  )}
+                </div>
+              </section>
+            </ScrollReveal>
 
 
-            {/* =============================================
-                SUMMARY PESERTA
-            ============================================= */}
-
-            <section className="mt-7">
-              <div className="flex items-center justify-between gap-3">
+            <ScrollReveal>
+              <section className="mt-7">
                 <div className="flex items-center gap-2">
                   <Activity
                     size={18}
                     className="text-indigo-600"
                   />
 
-                  <h2 className="text-base font-bold text-slate-800">
+                  <h2 className="font-bold text-slate-800">
                     Peserta Magang
                   </h2>
                 </div>
 
-                <span className="hidden text-[10px] font-semibold text-slate-400 sm:block">
-                  Klik kartu untuk
-                  melihat peserta
-                </span>
-              </div>
 
+                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  {[
+                    {
+                      label:
+                        'Total Peserta',
 
-              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <KartuRingkasan
-                  label="Total Peserta"
-                  value={angka(
-                    ringkasan.peserta_total
-                  )}
-                  detail="Seluruh peserta yang pernah dibuat"
-                  Icon={
-                    Users
-                  }
-                  tone="indigo"
-                  onClick={() =>
-                    bukaExplorer({
+                      value:
+                        ringkasan.peserta_total,
+
+                      detail:
+                        'Sesuai filter aktif',
+
+                      Icon:
+                        Users,
+
+                      tone:
+                        'indigo',
+
                       kind:
                         DETAIL_KIND.PESERTA,
+                    },
 
-                      title:
-                        'Seluruh Peserta Magang',
+                    {
+                      label:
+                        'Aktif',
 
-                      subtitle:
-                        'Seluruh peserta magang yang tercatat pada sistem.',
-                    })
-                  }
-                />
+                      value:
+                        ringkasan.peserta_aktif,
 
+                      detail:
+                        'Status Active',
 
-                <KartuRingkasan
-                  label="Aktif"
-                  value={angka(
-                    ringkasan.peserta_aktif
-                  )}
-                  detail="Sedang menjalani magang"
-                  Icon={
-                    Activity
-                  }
-                  tone="green"
-                  onClick={() =>
-                    bukaExplorer({
+                      Icon:
+                        Activity,
+
+                      tone:
+                        'green',
+
                       kind:
                         DETAIL_KIND.AKTIF,
+                    },
 
-                      title:
-                        'Peserta Aktif',
+                    {
+                      label:
+                        'Selesai',
 
-                      subtitle:
-                        'Peserta yang sedang menjalani periode magang.',
-                    })
-                  }
-                />
+                      value:
+                        ringkasan.peserta_selesai,
 
+                      detail:
+                        `Rata-rata nilai ${nilai(
+                          ringkasan.rata_nilai_final
+                        )}`,
 
-                <KartuRingkasan
-                  label="Selesai"
-                  value={angka(
-                    ringkasan.peserta_selesai
-                  )}
-                  detail={`Rata-rata nilai ${nilai(
-                    ringkasan.rata_nilai_final
-                  )}`}
-                  Icon={
-                    CheckCircle2
-                  }
-                  tone="slate"
-                  onClick={() =>
-                    bukaExplorer({
+                      Icon:
+                        CheckCircle2,
+
+                      tone:
+                        'slate',
+
                       kind:
                         DETAIL_KIND.SELESAI,
+                    },
 
-                      title:
-                        'Peserta Selesai',
+                    {
+                      label:
+                        'Nonaktif',
 
-                      subtitle:
-                        'Peserta dengan status magang Completed.',
-                    })
-                  }
-                />
+                      value:
+                        ringkasan.peserta_nonaktif,
 
+                      detail:
+                        `${angka(
+                          ringkasan.penonaktifan_total
+                        )} riwayat penonaktifan`,
 
-                <KartuRingkasan
-                  label="Nonaktif"
-                  value={angka(
-                    ringkasan.peserta_nonaktif
-                  )}
-                  detail={`${angka(
-                    ringkasan.penonaktifan_total
-                  )} riwayat penonaktifan`}
-                  Icon={
-                    UserMinus
-                  }
-                  tone="red"
-                  onClick={() =>
-                    bukaExplorer({
+                      Icon:
+                        UserMinus,
+
+                      tone:
+                        'red',
+
                       kind:
                         DETAIL_KIND.NONAKTIF,
+                    },
+                  ].map(
+                    (
+                      item,
+                      index
+                    ) => (
+                      <ScrollReveal
+                        key={
+                          item.label
+                        }
+                        delay={
+                          index *
+                          90
+                        }
+                      >
+                        <KartuRingkasan
+                          {...item}
+                          onClick={() =>
+                            bukaExplorer({
+                              kind:
+                                item.kind,
 
-                      title:
-                        'Peserta Nonaktif',
+                              title:
+                                item.label,
 
-                      subtitle:
-                        'Peserta dengan status magang Dropped.',
-                    })
-                  }
-                />
-              </div>
-            </section>
+                              subtitle:
+                                'Data mengikuti Filter Statistik aktif.',
+                            })
+                          }
+                        />
+                      </ScrollReveal>
+                    )
+                  )}
+                </div>
+              </section>
+            </ScrollReveal>
 
 
-            {/* =============================================
-                DIVISION + INSTITUTION
-            ============================================= */}
-
-            <DivisionInstitutionAnalytics
-              divisions={
-                divisi
+            <ScrollReveal
+              distance={
+                34
               }
-              institutions={
-                instansi
-              }
-              onOpenDivision={(
-                item
-              ) =>
-                bukaExplorer({
-                  kind:
-                    DETAIL_KIND.PESERTA,
-
-                  divisi:
-                    item.divisi,
-
-                  title:
-                    `Peserta — ${item.divisi}`,
-
-                  subtitle:
-                    `Seluruh peserta magang yang tercatat pada divisi ${item.divisi}.`,
-                })
-              }
-              onOpenDivisionMetric={(
-                item,
-                selectedMetric
-              ) => {
-                const mapping = {
-                  pendaftar: {
-                    kind:
-                      DETAIL_KIND.PENDAFTAR,
-
-                    label:
-                      'Pendaftar',
-                  },
-
-                  pending: {
-                    kind:
-                      DETAIL_KIND.PENDING,
-
-                    label:
-                      'Pending',
-                  },
-
-                  diterima: {
-                    kind:
-                      DETAIL_KIND.DITERIMA,
-
-                    label:
-                      'Diterima',
-                  },
-
-                  aktif: {
-                    kind:
-                      DETAIL_KIND.AKTIF,
-
-                    label:
-                      'Peserta Aktif',
-                  },
-
-                  selesai: {
-                    kind:
-                      DETAIL_KIND.SELESAI,
-
-                    label:
-                      'Peserta Selesai',
-                  },
-
-                  nonaktif: {
-                    kind:
-                      DETAIL_KIND.NONAKTIF,
-
-                    label:
-                      'Peserta Nonaktif',
-                  },
-                };
-
-
-                const config =
-                  mapping[
-                    selectedMetric
-                  ];
-
-
-                if (!config) {
-                  return;
+            >
+              <DivisionInstitutionAnalytics
+                divisions={
+                  divisi
                 }
-
-
-                bukaExplorer({
-                  kind:
-                    config.kind,
-
-                  divisi:
-                    item.divisi,
-
-                  title:
-                    `${config.label} — ${item.divisi}`,
-
-                  subtitle:
-                    `${config.label} pada divisi ${item.divisi}.`,
-                });
-              }}
-              onOpenInstitution={(
-                item
-              ) =>
-                bukaExplorer({
-                  kind:
-                    DETAIL_KIND.INSTANSI,
-
-                  instansi:
-                    item.instansi,
-
-                  title:
-                    item.instansi,
-
-                  subtitle:
-                    `Seluruh pendaftar yang berasal dari ${item.instansi}.`,
-                })
-              }
-              onOpenInstitutionMetric={(
-                item,
-                selectedMetric
-              ) => {
-                const mapping = {
-                  peserta: {
+                institutions={
+                  instansi
+                }
+                onOpenDivision={(
+                  item
+                ) =>
+                  bukaExplorer({
                     kind:
                       DETAIL_KIND.PESERTA,
 
-                    label:
-                      'Peserta',
-                  },
+                    divisi:
+                      item.divisi,
 
-                  diterima: {
-                    kind:
-                      DETAIL_KIND.DITERIMA,
+                    title:
+                      `Peserta — ${item.divisi}`,
 
-                    label:
-                      'Diterima',
-                  },
-
-                  pending: {
-                    kind:
-                      DETAIL_KIND.PENDING,
-
-                    label:
-                      'Pending',
-                  },
-
-                  ditolak: {
-                    kind:
-                      DETAIL_KIND.DITOLAK,
-
-                    label:
-                      'Ditolak',
-                  },
-                };
-
-
-                const config =
-                  mapping[
-                    selectedMetric
-                  ];
-
-
-                if (!config) {
-                  return;
+                    subtitle:
+                      'Data mengikuti Filter Statistik aktif.',
+                  })
                 }
+                onOpenDivisionMetric={(
+                  item,
+                  selectedMetric
+                ) => {
+                  const mapping = {
+                    pendaftar: [
+                      DETAIL_KIND.PENDAFTAR,
+                      'Pendaftar',
+                    ],
+
+                    pending: [
+                      DETAIL_KIND.PENDING,
+                      'Pending',
+                    ],
+
+                    diterima: [
+                      DETAIL_KIND.DITERIMA,
+                      'Diterima',
+                    ],
+
+                    aktif: [
+                      DETAIL_KIND.AKTIF,
+                      'Peserta Aktif',
+                    ],
+
+                    selesai: [
+                      DETAIL_KIND.SELESAI,
+                      'Peserta Selesai',
+                    ],
+
+                    nonaktif: [
+                      DETAIL_KIND.NONAKTIF,
+                      'Peserta Nonaktif',
+                    ],
+                  };
 
 
-                bukaExplorer({
-                  kind:
-                    config.kind,
+                  const config =
+                    mapping[
+                      selectedMetric
+                    ];
 
-                  instansi:
-                    item.instansi,
 
-                  title:
-                    `${config.label} — ${item.instansi}`,
+                  if (!config) {
+                    return;
+                  }
 
-                  subtitle:
-                    `${config.label} yang berasal dari ${item.instansi}.`,
-                });
-              }}
+
+                  bukaExplorer({
+                    kind:
+                      config[
+                        0
+                      ],
+
+                    divisi:
+                      item.divisi,
+
+                    title:
+                      `${config[1]} — ${item.divisi}`,
+
+                    subtitle:
+                      'Data mengikuti Filter Statistik aktif.',
+                  });
+                }}
+                onOpenInstitution={(
+                  item
+                ) =>
+                  bukaExplorer({
+                    kind:
+                      DETAIL_KIND.INSTANSI,
+
+                    instansi:
+                      item.instansi,
+
+                    title:
+                      item.instansi,
+
+                    subtitle:
+                      'Data mengikuti Filter Statistik aktif.',
+                  })
+                }
+                onOpenInstitutionMetric={(
+                  item,
+                  selectedMetric
+                ) => {
+                  const mapping = {
+                    peserta: [
+                      DETAIL_KIND.PESERTA,
+                      'Peserta',
+                    ],
+
+                    diterima: [
+                      DETAIL_KIND.DITERIMA,
+                      'Diterima',
+                    ],
+
+                    pending: [
+                      DETAIL_KIND.PENDING,
+                      'Pending',
+                    ],
+
+                    ditolak: [
+                      DETAIL_KIND.DITOLAK,
+                      'Ditolak',
+                    ],
+                  };
+
+
+                  const config =
+                    mapping[
+                      selectedMetric
+                    ];
+
+
+                  if (!config) {
+                    return;
+                  }
+
+
+                  bukaExplorer({
+                    kind:
+                      config[
+                        0
+                      ],
+
+                    instansi:
+                      item.instansi,
+
+                    title:
+                      `${config[1]} — ${item.instansi}`,
+
+                    subtitle:
+                      'Data mengikuti Filter Statistik aktif.',
+                  });
+                }}
+              />
+            </ScrollReveal>
+
+
+            <JurusanAnalytics
+              data={
+                jurusanData
+              }
+              summary={
+                jurusanSummary
+              }
+              loading={
+                false
+              }
+              error={
+                null
+              }
+              onOpenJurusan={
+                bukaJurusan
+              }
+              onOpenMetric={
+                bukaMetricJurusan
+              }
             />
 
 
-            {/* =============================================
-                MODERN MONTHLY CHART
-            ============================================= */}
-
-            <div className="mt-8">
-              <MonthlyRegistrationChart
-                data={
-                  bulanan
-                }
-                metric={
-                  metric
-                }
-                onMetricChange={(
-                  nextMetric
-                ) =>
-                  updateFilter(
-                    'metric',
+            <ScrollReveal
+              distance={
+                36
+              }
+            >
+              <div className="mt-8">
+                <MonthlyRegistrationChart
+                  data={
+                    bulanan
+                  }
+                  metric={
+                    metric
+                  }
+                  onMetricChange={(
                     nextMetric
-                  )
-                }
-                onMonthClick={
-                  bukaBulanDariGrafik
-                }
-              />
-            </div>
+                  ) =>
+                    updateFilter(
+                      'metric',
+                      nextMetric
+                    )
+                  }
+                  onMonthClick={
+                    bukaBulanDariGrafik
+                  }
+                />
+              </div>
+            </ScrollReveal>
 
 
-            {/* =============================================
-                INTERACTIVE MONTHLY RECAP
-            ============================================= */}
+            <ScrollReveal
+              distance={
+                36
+              }
+            >
+              <div className="mt-6">
+                <MonthlyRecapTable
+                  data={
+                    bulanan
+                  }
+                  sortKey={
+                    sortKey
+                  }
+                  sortDirection={
+                    sortDirection
+                  }
+                  onSort={
+                    toggleSort
+                  }
+                  onMetricClick={
+                    bukaBulanDariGrafik
+                  }
+                  onDivisionClick={(
+                    item,
+                    division
+                  ) =>
+                    bukaExplorer({
+                      kind:
+                        DETAIL_KIND.PENDAFTAR,
 
-            <div className="mt-6">
-              <MonthlyRecapTable
-                data={
-                  bulanan
+                      bulan:
+                        item.bulan,
+
+                      divisi:
+                        division,
+
+                      title:
+                        `${division} — ${namaBulanDetail(
+                          item.bulan
+                        )}`,
+
+                      subtitle:
+                        'Data mengikuti Filter Statistik aktif.',
+                    })
+                  }
+                />
+              </div>
+            </ScrollReveal>
+
+
+            <ScrollReveal
+              distance={
+                36
+              }
+            >
+              <YearlySuspensionAnalytics
+                yearly={
+                  tahunan
                 }
-                filters={
-                  filters
+                suspensions={
+                  penonaktifan
                 }
-                updateFilter={
-                  updateFilter
-                }
-                resetFilters={
-                  resetFilters
-                }
-                sortKey={
-                  sortKey
-                }
-                sortDirection={
-                  sortDirection
-                }
-                onSort={
-                  toggleSort
-                }
-                onMetricClick={
-                  bukaBulanDariGrafik
-                }
-                onDivisionClick={(
-                  item,
-                  division
+                onOpenYear={(
+                  item
                 ) =>
                   bukaExplorer({
                     kind:
                       DETAIL_KIND.PENDAFTAR,
 
-                    bulan:
-                      item.bulan,
-
-                    divisi:
-                      division,
+                    tahun:
+                      String(
+                        item.tahun
+                      ),
 
                     title:
-                      `${division} — ${namaBulanDetail(
-                        item.bulan
-                      )}`,
+                      `Pendaftar — ${item.tahun}`,
 
                     subtitle:
-                      `Pendaftar divisi ${division} pada ${namaBulanDetail(
-                        item.bulan
-                      )}.`,
+                      'Data mengikuti Filter Statistik aktif.',
+                  })
+                }
+                onOpenYearMetric={(
+                  item,
+                  selectedMetric
+                ) => {
+                  const mapping = {
+                    pendaftar: [
+                      DETAIL_KIND.PENDAFTAR,
+                      'Pendaftar',
+                    ],
+
+                    diterima: [
+                      DETAIL_KIND.DITERIMA,
+                      'Diterima',
+                    ],
+
+                    pending: [
+                      DETAIL_KIND.PENDING,
+                      'Pending',
+                    ],
+
+                    ditolak: [
+                      DETAIL_KIND.DITOLAK,
+                      'Ditolak',
+                    ],
+                  };
+
+
+                  const config =
+                    mapping[
+                      selectedMetric
+                    ];
+
+
+                  if (!config) {
+                    return;
+                  }
+
+
+                  bukaExplorer({
+                    kind:
+                      config[
+                        0
+                      ],
+
+                    tahun:
+                      String(
+                        item.tahun
+                      ),
+
+                    title:
+                      `${config[1]} — ${item.tahun}`,
+
+                    subtitle:
+                      'Data mengikuti Filter Statistik aktif.',
+                  });
+                }}
+                onOpenSuspension={(
+                  item
+                ) =>
+                  bukaExplorer({
+                    kind:
+                      DETAIL_KIND.PENONAKTIFAN,
+
+                    alasan:
+                      item.alasan,
+
+                    title:
+                      `Penonaktifan — ${item.alasan}`,
+
+                    subtitle:
+                      'Data mengikuti Filter Statistik aktif.',
                   })
                 }
               />
-            </div>
+            </ScrollReveal>
 
 
-            {/* =============================================
-                FASE 5-8F
-                YEARLY + SUSPENSION UNIFIED
-            ============================================= */}
-
-            <YearlySuspensionAnalytics
-              yearly={
-                tahunan
-              }
-              suspensions={
-                penonaktifan
-              }
-              onOpenYear={(
-                item
-              ) =>
-                bukaExplorer({
-                  kind:
-                    DETAIL_KIND.PENDAFTAR,
-
-                  tahun:
-                    String(
-                      item.tahun
-                    ),
-
-                  title:
-                    `Pendaftar — ${item.tahun}`,
-
-                  subtitle:
-                    `${angka(
-                      item.total_pendaftar
-                    )} pendaftar tercatat pada tahun ${item.tahun}.`,
-                })
-              }
-              onOpenYearMetric={(
-                item,
-                selectedMetric
-              ) => {
-                const mapping = {
-                  pendaftar: {
-                    kind:
-                      DETAIL_KIND.PENDAFTAR,
-
-                    label:
-                      'Pendaftar',
-
-                    value:
-                      item.total_pendaftar,
-                  },
-
-                  diterima: {
-                    kind:
-                      DETAIL_KIND.DITERIMA,
-
-                    label:
-                      'Diterima',
-
-                    value:
-                      item.diterima,
-                  },
-
-                  pending: {
-                    kind:
-                      DETAIL_KIND.PENDING,
-
-                    label:
-                      'Pending',
-
-                    value:
-                      item.pending,
-                  },
-
-                  ditolak: {
-                    kind:
-                      DETAIL_KIND.DITOLAK,
-
-                    label:
-                      'Ditolak',
-
-                    value:
-                      item.ditolak,
-                  },
-                };
-
-
-                const config =
-                  mapping[
-                    selectedMetric
-                  ];
-
-
-                if (!config) {
-                  return;
-                }
-
-
-                bukaExplorer({
-                  kind:
-                    config.kind,
-
-                  tahun:
-                    String(
-                      item.tahun
-                    ),
-
-                  title:
-                    `${config.label} — ${item.tahun}`,
-
-                  subtitle:
-                    `${angka(
-                      config.value
-                    )} data ${config.label.toLowerCase()} tercatat pada tahun ${item.tahun}.`,
-                });
-              }}
-              onOpenSuspension={(
-                item
-              ) =>
-                bukaExplorer({
-                  kind:
-                    DETAIL_KIND.PENONAKTIFAN,
-
-                  alasan:
-                    item.alasan,
-
-                  title:
-                    `Penonaktifan — ${item.alasan}`,
-
-                  subtitle:
-                    `${angka(
-                      item.jumlah
-                    )} riwayat penonaktifan dengan alasan “${item.alasan}”.`,
-                })
-              }
-            />
-
-
-            {/* =============================================
-                DUMMY DATA REMINDER
-            ============================================= */}
-
-            <div className="mt-6 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3">
-              <p className="text-xs leading-relaxed text-amber-700">
-                💡 Statistik saat ini
-                juga menghitung data
-                dummy yang ada di
-                database. Sebelum
-                sistem resmi
-                diluncurkan, data
-                dummy tersebut
-                sebaiknya dibersihkan.
-              </p>
-            </div>
+            <ScrollReveal>
+              <div className="mt-6 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3">
+                <p className="text-xs leading-relaxed text-amber-700">
+                  💡 Statistik masih
+                  menghitung data
+                  dummy/test. Data
+                  tersebut perlu
+                  dibersihkan sebelum
+                  launch resmi.
+                </p>
+              </div>
+            </ScrollReveal>
           </>
         )}
 
-
-      {/* =================================================
-          ONE GENERIC EXPLORER FOR ALL STATISTICS
-      ================================================= */}
 
       <StatistikDetailModal
         open={

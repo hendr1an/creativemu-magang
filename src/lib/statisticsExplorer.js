@@ -8,41 +8,23 @@ import {
 ========================================================= */
 
 export const DETAIL_KIND = {
-  PENDAFTAR:
-    'pendaftar',
+  PENDAFTAR: 'pendaftar',
+  DITERIMA: 'diterima',
+  PENDING: 'pending',
+  DITOLAK: 'ditolak',
 
-  DITERIMA:
-    'diterima',
+  PESERTA: 'peserta',
+  AKTIF: 'aktif',
+  SELESAI: 'selesai',
+  NONAKTIF: 'nonaktif',
 
-  PENDING:
-    'pending',
+  MULAI_MAGANG: 'mulai_magang',
 
-  DITOLAK:
-    'ditolak',
+  DIVISI: 'divisi',
+  INSTANSI: 'instansi',
+  JURUSAN: 'jurusan',
 
-  PESERTA:
-    'peserta',
-
-  AKTIF:
-    'aktif',
-
-  SELESAI:
-    'selesai',
-
-  NONAKTIF:
-    'nonaktif',
-
-  MULAI_MAGANG:
-    'mulai_magang',
-
-  DIVISI:
-    'divisi',
-
-  INSTANSI:
-    'instansi',
-
-  PENONAKTIFAN:
-    'penonaktifan',
+  PENONAKTIFAN: 'penonaktifan',
 };
 
 
@@ -75,14 +57,51 @@ export const DETAIL_LABEL = {
     'Peserta Mulai Magang',
 
   divisi:
-    'Peserta / Pendaftar Divisi',
+    'Data Divisi',
 
   instansi:
     'Data Instansi',
 
+  jurusan:
+    'Data Jurusan / Program Studi',
+
   penonaktifan:
     'Riwayat Penonaktifan',
 };
+
+
+/* =========================================================
+   TEXT HELPERS
+========================================================= */
+
+function normalizeText(
+  value
+) {
+  return String(
+    value ??
+    ''
+  )
+    .trim()
+    .replace(
+      /\s+/g,
+      ' '
+    )
+    .toLowerCase();
+}
+
+
+function isEmptyJurusan(
+  value
+) {
+  return (
+    value === null ||
+    value === undefined ||
+    String(
+      value
+    ).trim() ===
+      ''
+  );
+}
 
 
 /* =========================================================
@@ -172,21 +191,15 @@ export function namaBulanDetail(
   return new Intl.DateTimeFormat(
     'id-ID',
     {
-      month:
-        'long',
-
-      year:
-        'numeric',
-
-      timeZone:
-        'Asia/Jakarta',
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'Asia/Jakarta',
     }
   ).format(
     new Date(
       Date.UTC(
         tahun,
-        nomorBulan -
-          1,
+        nomorBulan - 1,
         1
       )
     )
@@ -205,17 +218,10 @@ export function tanggalStatistik(
   return new Intl.DateTimeFormat(
     'id-ID',
     {
-      day:
-        'numeric',
-
-      month:
-        'short',
-
-      year:
-        'numeric',
-
-      timeZone:
-        'Asia/Jakarta',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      timeZone: 'Asia/Jakarta',
     }
   ).format(
     new Date(
@@ -236,14 +242,9 @@ export function tanggalWaktuStatistik(
   return new Intl.DateTimeFormat(
     'id-ID',
     {
-      dateStyle:
-        'medium',
-
-      timeStyle:
-        'short',
-
-      timeZone:
-        'Asia/Jakarta',
+      dateStyle: 'medium',
+      timeStyle: 'short',
+      timeZone: 'Asia/Jakarta',
     }
   ).format(
     new Date(
@@ -253,16 +254,190 @@ export function tanggalWaktuStatistik(
 }
 
 
+function calendarParts(
+  value
+) {
+  if (!value) {
+    return null;
+  }
+
+
+  const stringValue =
+    String(
+      value
+    );
+
+
+  /*
+    DATE dari PostgreSQL.
+    Hindari timezone conversion.
+  */
+  const dateOnlyMatch =
+    stringValue.match(
+      /^(\d{4})-(\d{2})-\d{2}$/
+    );
+
+
+  if (
+    dateOnlyMatch
+  ) {
+    return {
+      year:
+        Number(
+          dateOnlyMatch[
+            1
+          ]
+        ),
+
+      month:
+        Number(
+          dateOnlyMatch[
+            2
+          ]
+        ),
+    };
+  }
+
+
+  const date =
+    new Date(
+      value
+    );
+
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return null;
+  }
+
+
+  const parts =
+    new Intl.DateTimeFormat(
+      'en-US',
+      {
+        year: 'numeric',
+        month: '2-digit',
+        timeZone: 'Asia/Jakarta',
+      }
+    ).formatToParts(
+      date
+    );
+
+
+  const year =
+    Number(
+      parts.find(
+        (part) =>
+          part.type ===
+          'year'
+      )?.value
+    );
+
+
+  const month =
+    Number(
+      parts.find(
+        (part) =>
+          part.type ===
+          'month'
+      )?.value
+    );
+
+
+  return {
+    year,
+    month,
+  };
+}
+
+
+function filterCalendar(
+  rows,
+  field,
+  {
+    tahun,
+    bulanNomor,
+  }
+) {
+  const targetYear =
+    tahun &&
+    tahun !==
+      'Semua'
+      ? Number(
+          tahun
+        )
+      : null;
+
+
+  const targetMonth =
+    bulanNomor &&
+    bulanNomor !==
+      'Semua'
+      ? Number(
+          bulanNomor
+        )
+      : null;
+
+
+  if (
+    !targetYear &&
+    !targetMonth
+  ) {
+    return rows;
+  }
+
+
+  return rows.filter(
+    (row) => {
+      const parts =
+        calendarParts(
+          row[
+            field
+          ]
+        );
+
+
+      if (!parts) {
+        return false;
+      }
+
+
+      if (
+        targetYear &&
+        parts.year !==
+          targetYear
+      ) {
+        return false;
+      }
+
+
+      if (
+        targetMonth &&
+        parts.month !==
+          targetMonth
+      ) {
+        return false;
+      }
+
+
+      return true;
+    }
+  );
+}
+
+
 /* =========================================================
-   NORMALIZER
+   NORMALIZERS
 ========================================================= */
 
 function normalizeApplication(
   row
 ) {
   return {
-    id:
-      row.id,
+    id: row.id,
 
     source:
       'application',
@@ -316,8 +491,7 @@ function normalizeIntern(
   row
 ) {
   return {
-    id:
-      row.id,
+    id: row.id,
 
     source:
       'intern',
@@ -433,172 +607,115 @@ function normalizeSuspension(
 
 
 /* =========================================================
-   FILTER QUERY HELPERS
+   SHARED FILTERS
 ========================================================= */
 
-function applyApplicationFilters(
-  query,
-  options
+function filterJurusan(
+  rows,
+  jurusan
 ) {
-  let q =
-    query;
-
-
   if (
-    options.divisi &&
-    options.divisi !==
+    !jurusan ||
+    jurusan ===
       'Semua'
   ) {
-    q =
-      q.eq(
-        'divisi',
-        options.divisi
-      );
+    return rows;
   }
 
 
   if (
-    options.instansi
+    normalizeText(
+      jurusan
+    ) ===
+    'belum diisi'
   ) {
-    q =
-      q.eq(
-        'instansi',
-        options.instansi
-      );
+    return rows.filter(
+      (row) =>
+        isEmptyJurusan(
+          row.jurusan
+        )
+    );
   }
 
 
-  const range =
-    rentangBulan(
-      options.bulan
+  const target =
+    normalizeText(
+      jurusan
     );
 
 
-  if (range) {
-    q =
-      q
-        .gte(
-          'created_at',
-          `${range.mulai}T00:00:00`
-        )
-        .lt(
-          'created_at',
-          `${range.selesai}T00:00:00`
-        );
-  } else if (
-    options.tahun &&
-    options.tahun !==
-      'Semua'
-  ) {
-    q =
-      q
-        .gte(
-          'created_at',
-          `${options.tahun}-01-01T00:00:00`
-        )
-        .lt(
-          'created_at',
-          `${
-            Number(
-              options.tahun
-            ) +
-            1
-          }-01-01T00:00:00`
-        );
-  }
-
-
-  return q;
+  return rows.filter(
+    (row) =>
+      normalizeText(
+        row.jurusan
+      ) ===
+      target
+  );
 }
 
 
-function applyInternFilters(
-  query,
-  options,
-  dateColumn =
-    'created_at'
+function filterInstansi(
+  rows,
+  instansi
 ) {
-  let q =
-    query;
-
-
-  if (
-    options.divisi &&
-    options.divisi !==
-      'Semua'
-  ) {
-    q =
-      q.eq(
-        'divisi',
-        options.divisi
-      );
+  if (!instansi) {
+    return rows;
   }
 
 
-  if (
-    options.instansi
-  ) {
-    q =
-      q.eq(
-        'instansi',
-        options.instansi
-      );
-  }
-
-
-  const range =
-    rentangBulan(
-      options.bulan
+  const target =
+    normalizeText(
+      instansi
     );
 
 
-  if (range) {
-    q =
-      q
-        .gte(
-          dateColumn,
-          range.mulai
-        )
-        .lt(
-          dateColumn,
-          range.selesai
-        );
-  } else if (
-    options.tahun &&
-    options.tahun !==
-      'Semua'
-  ) {
-    q =
-      q
-        .gte(
-          dateColumn,
-          `${options.tahun}-01-01`
-        )
-        .lt(
-          dateColumn,
-          `${
-            Number(
-              options.tahun
-            ) +
-            1
-          }-01-01`
-        );
-  }
-
-
-  return q;
+  return rows.filter(
+    (row) =>
+      normalizeText(
+        row.instansi
+      ) ===
+      target
+  );
 }
 
 
 /* =========================================================
-   APPLICATION DETAIL
+   APPLICATIONS
 ========================================================= */
 
 async function loadApplications(
   options,
-  status =
+  forcedStatus =
     null
 ) {
+  /*
+    Kalau Global Filter Approved tetapi
+    user membuka card Pending yang nilainya 0,
+    hasil harus tetap 0.
+  */
+  if (
+    forcedStatus &&
+    options.statusPendaftaran &&
+    options.statusPendaftaran !==
+      'Semua' &&
+    forcedStatus !==
+      options.statusPendaftaran
+  ) {
+    return [];
+  }
+
+
+  const effectiveStatus =
+    forcedStatus ??
+    (
+      options.statusPendaftaran &&
+      options.statusPendaftaran !==
+        'Semua'
+        ? options.statusPendaftaran
+        : null
+    );
+
+
   let query =
     supabase
       .from(
@@ -627,20 +744,78 @@ async function loadApplications(
       );
 
 
-  if (status) {
+  if (
+    effectiveStatus
+  ) {
     query =
       query.eq(
         'status_pendaftaran',
-        status
+        effectiveStatus
       );
   }
 
 
-  query =
-    applyApplicationFilters(
-      query,
-      options
+  if (
+    options.divisi &&
+    options.divisi !==
+      'Semua'
+  ) {
+    query =
+      query.eq(
+        'divisi',
+        options.divisi
+      );
+  }
+
+
+  /*
+    Exact monthly drill-down.
+  */
+  const exactRange =
+    rentangBulan(
+      options.bulan
     );
+
+
+  if (
+    exactRange
+  ) {
+    query =
+      query
+        .gte(
+          'created_at',
+          `${exactRange.mulai}T00:00:00`
+        )
+        .lt(
+          'created_at',
+          `${exactRange.selesai}T00:00:00`
+        );
+  } else if (
+    options.tahun &&
+    options.tahun !==
+      'Semua' &&
+    (
+      !options.bulanNomor ||
+      options.bulanNomor ===
+        'Semua'
+    )
+  ) {
+    query =
+      query
+        .gte(
+          'created_at',
+          `${options.tahun}-01-01T00:00:00`
+        )
+        .lt(
+          'created_at',
+          `${
+            Number(
+              options.tahun
+            ) +
+            1
+          }-01-01T00:00:00`
+        );
+  }
 
 
   const {
@@ -655,26 +830,85 @@ async function loadApplications(
   }
 
 
-  return (
-    data ??
-    []
-  ).map(
-    normalizeApplication
-  );
+  let rows =
+    (
+      data ??
+      []
+    ).map(
+      normalizeApplication
+    );
+
+
+  rows =
+    filterJurusan(
+      rows,
+      options.jurusan
+    );
+
+
+  rows =
+    filterInstansi(
+      rows,
+      options.instansi
+    );
+
+
+  if (
+    !exactRange
+  ) {
+    rows =
+      filterCalendar(
+        rows,
+        'tanggal',
+        {
+          tahun:
+            options.tahun,
+
+          bulanNomor:
+            options.bulanNomor,
+        }
+      );
+  }
+
+
+  return rows;
 }
 
 
 /* =========================================================
-   INTERN DETAIL
+   INTERNS
 ========================================================= */
 
 async function loadInterns(
   options,
-  status =
+  forcedStatus =
     null,
   dateColumn =
-    'created_at'
+    'tanggal_mulai'
 ) {
+  if (
+    forcedStatus &&
+    options.statusMagang &&
+    options.statusMagang !==
+      'Semua' &&
+    forcedStatus !==
+      options.statusMagang
+  ) {
+    return [];
+  }
+
+
+  const effectiveStatus =
+    forcedStatus ??
+    (
+      options.statusMagang &&
+      options.statusMagang !==
+        'Semua'
+        ? options.statusMagang
+        : null
+    );
+
+
   let query =
     supabase
       .from(
@@ -704,21 +938,75 @@ async function loadInterns(
       );
 
 
-  if (status) {
+  if (
+    effectiveStatus
+  ) {
     query =
       query.eq(
         'status_magang',
-        status
+        effectiveStatus
       );
   }
 
 
-  query =
-    applyInternFilters(
-      query,
-      options,
-      dateColumn
+  if (
+    options.divisi &&
+    options.divisi !==
+      'Semua'
+  ) {
+    query =
+      query.eq(
+        'divisi',
+        options.divisi
+      );
+  }
+
+
+  const exactRange =
+    rentangBulan(
+      options.bulan
     );
+
+
+  if (
+    exactRange
+  ) {
+    query =
+      query
+        .gte(
+          dateColumn,
+          exactRange.mulai
+        )
+        .lt(
+          dateColumn,
+          exactRange.selesai
+        );
+  } else if (
+    options.tahun &&
+    options.tahun !==
+      'Semua' &&
+    (
+      !options.bulanNomor ||
+      options.bulanNomor ===
+        'Semua'
+    )
+  ) {
+    query =
+      query
+        .gte(
+          dateColumn,
+          `${options.tahun}-01-01`
+        )
+        .lt(
+          dateColumn,
+          `${
+            Number(
+              options.tahun
+            ) +
+            1
+          }-01-01`
+        );
+  }
 
 
   const {
@@ -733,17 +1021,57 @@ async function loadInterns(
   }
 
 
-  return (
-    data ??
-    []
-  ).map(
-    normalizeIntern
-  );
+  let rows =
+    (
+      data ??
+      []
+    ).map(
+      normalizeIntern
+    );
+
+
+  rows =
+    filterJurusan(
+      rows,
+      options.jurusan
+    );
+
+
+  rows =
+    filterInstansi(
+      rows,
+      options.instansi
+    );
+
+
+  if (
+    !exactRange
+  ) {
+    /*
+      Backend global statistics memakai
+      tanggal_mulai untuk domain Intern.
+    */
+    rows =
+      filterCalendar(
+        rows,
+        'tanggalMulai',
+        {
+          tahun:
+            options.tahun,
+
+          bulanNomor:
+            options.bulanNomor,
+        }
+      );
+  }
+
+
+  return rows;
 }
 
 
 /* =========================================================
-   SUSPENSION DETAIL
+   SUSPENSIONS
 ========================================================= */
 
 async function loadSuspensions(
@@ -793,27 +1121,34 @@ async function loadSuspensions(
   }
 
 
-  const range =
+  const exactRange =
     rentangBulan(
       options.bulan
     );
 
 
-  if (range) {
+  if (
+    exactRange
+  ) {
     query =
       query
         .gte(
           'created_at',
-          `${range.mulai}T00:00:00`
+          `${exactRange.mulai}T00:00:00`
         )
         .lt(
           'created_at',
-          `${range.selesai}T00:00:00`
+          `${exactRange.selesai}T00:00:00`
         );
   } else if (
     options.tahun &&
     options.tahun !==
-      'Semua'
+      'Semua' &&
+    (
+      !options.bulanNomor ||
+      options.bulanNomor ===
+        'Semua'
+    )
   ) {
     query =
       query
@@ -861,9 +1196,7 @@ async function loadSuspensions(
   ) {
     rows =
       rows.filter(
-        (
-          row
-        ) =>
+        (row) =>
           row.divisi ===
           options.divisi
       );
@@ -871,15 +1204,47 @@ async function loadSuspensions(
 
 
   if (
-    options.instansi
+    options.statusMagang &&
+    options.statusMagang !==
+      'Semua'
   ) {
     rows =
       rows.filter(
-        (
-          row
-        ) =>
-          row.instansi ===
-          options.instansi
+        (row) =>
+          row.status ===
+          options.statusMagang
+      );
+  }
+
+
+  rows =
+    filterJurusan(
+      rows,
+      options.jurusan
+    );
+
+
+  rows =
+    filterInstansi(
+      rows,
+      options.instansi
+    );
+
+
+  if (
+    !exactRange
+  ) {
+    rows =
+      filterCalendar(
+        rows,
+        'tanggal',
+        {
+          tahun:
+            options.tahun,
+
+          bulanNomor:
+            options.bulanNomor,
+        }
       );
   }
 
@@ -895,30 +1260,42 @@ async function loadSuspensions(
 export async function loadStatistikDetail({
   kind,
 
-  bulan =
-    null,
+  /*
+    Exact month:
+    YYYY-MM
 
-  tahun =
-    'Semua',
+    Dipakai ketika klik satu row/chart bulan.
+  */
+  bulan = null,
 
-  divisi =
-    'Semua',
+  /*
+    Global calendar filter.
+  */
+  tahun = 'Semua',
 
-  instansi =
-    null,
+  bulanNomor = 'Semua',
 
-  status =
-    'Semua',
+  divisi = 'Semua',
 
-  alasan =
-    null,
+  instansi = null,
+
+  jurusan = 'Semua',
+
+  statusPendaftaran = 'Semua',
+
+  statusMagang = 'Semua',
+
+  alasan = null,
 } = {}) {
   const options = {
     bulan,
     tahun,
+    bulanNomor,
     divisi,
     instansi,
-    status,
+    jurusan,
+    statusPendaftaran,
+    statusMagang,
     alasan,
   };
 
@@ -994,57 +1371,21 @@ export async function loadStatistikDetail({
       );
 
 
-    case DETAIL_KIND.DIVISI: {
-      if (
-        [
-          'Pending',
-          'Approved',
-          'Rejected',
-        ].includes(
-          status
-        )
-      ) {
-        return loadApplications(
-          options,
-          status
-        );
-      }
-
-
-      if (
-        [
-          'Active',
-          'Completed',
-          'Dropped',
-        ].includes(
-          status
-        )
-      ) {
-        return loadInterns(
-          options,
-          status
-        );
-      }
-
-
+    case DETAIL_KIND.DIVISI:
       return loadInterns(
         options
       );
-    }
 
 
     case DETAIL_KIND.INSTANSI:
       return loadApplications(
-        options,
-        [
-          'Pending',
-          'Approved',
-          'Rejected',
-        ].includes(
-          status
-        )
-          ? status
-          : null
+        options
+      );
+
+
+    case DETAIL_KIND.JURUSAN:
+      return loadInterns(
+        options
       );
 
 
@@ -1057,7 +1398,7 @@ export async function loadStatistikDetail({
 
 
 /* =========================================================
-   CLIENT SEARCH
+   LOCAL SEARCH
 ========================================================= */
 
 export function filterStatistikRows(
@@ -1079,9 +1420,7 @@ export function filterStatistikRows(
 
 
   return rows.filter(
-    (
-      row
-    ) =>
+    (row) =>
       [
         row.nama,
         row.email,
@@ -1092,11 +1431,11 @@ export function filterStatistikRows(
         row.status,
         row.alasan,
       ]
-        .filter(Boolean)
+        .filter(
+          Boolean
+        )
         .some(
-          (
-            value
-          ) =>
+          (value) =>
             String(
               value
             )

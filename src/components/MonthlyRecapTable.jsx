@@ -6,171 +6,106 @@ import {
 import {
   ChevronDown,
   ChevronUp,
-  Filter,
-  RotateCcw,
-  SlidersHorizontal,
+  EyeOff,
 } from 'lucide-react';
 
 
 const DIVISION_META = {
   Admin: {
-    short:
-      'A',
-
-    icon:
-      '📋',
-
-    key:
-      'div_admin',
+    short: 'A',
+    icon: '📋',
+    key: 'div_admin',
   },
 
   Sosmed: {
-    short:
-      'S',
-
-    icon:
-      '📱',
-
-    key:
-      'div_sosmed',
+    short: 'S',
+    icon: '📱',
+    key: 'div_sosmed',
   },
 
   Marketplace: {
-    short:
-      'M',
-
-    icon:
-      '🛒',
-
-    key:
-      'div_marketplace',
+    short: 'M',
+    icon: '🛒',
+    key: 'div_marketplace',
   },
 
   'Web Developer': {
-    short:
-      'W',
-
-    icon:
-      '💻',
-
-    key:
-      'div_webdev',
+    short: 'W',
+    icon: '💻',
+    key: 'div_webdev',
   },
-};
-
-
-const STATUS_FILTERS = {
-  Semua:
-    null,
-
-  Approved:
-    'diterima',
-
-  Pending:
-    'pending',
-
-  Rejected:
-    'ditolak',
 };
 
 
 const SORT_META = {
   bulan: {
-    label:
-      'Bulan',
+    label: 'Bulan',
 
-    get:
-      (
-        row
-      ) =>
-        String(
-          row.bulan ??
-          ''
-        ),
+    get: (row) =>
+      String(
+        row.bulan ??
+        ''
+      ),
   },
 
   pendaftar: {
-    label:
-      'Pendaftar',
+    label: 'Pendaftar',
 
-    get:
-      (
-        row
-      ) =>
-        Number(
-          row.total_pendaftar ??
-          0
-        ),
+    get: (row) =>
+      Number(
+        row.total_pendaftar ??
+        0
+      ),
   },
 
   diterima: {
-    label:
-      'Diterima',
+    label: 'Diterima',
 
-    get:
-      (
-        row
-      ) =>
-        Number(
-          row.diterima ??
-          0
-        ),
+    get: (row) =>
+      Number(
+        row.diterima ??
+        0
+      ),
   },
 
   pending: {
-    label:
-      'Pending',
+    label: 'Pending',
 
-    get:
-      (
-        row
-      ) =>
-        Number(
-          row.pending ??
-          0
-        ),
+    get: (row) =>
+      Number(
+        row.pending ??
+        0
+      ),
   },
 
   ditolak: {
-    label:
-      'Ditolak',
+    label: 'Ditolak',
 
-    get:
-      (
-        row
-      ) =>
-        Number(
-          row.ditolak ??
-          0
-        ),
+    get: (row) =>
+      Number(
+        row.ditolak ??
+        0
+      ),
   },
 
   peserta_mulai: {
-    label:
-      'Mulai Magang',
+    label: 'Mulai Magang',
 
-    get:
-      (
-        row
-      ) =>
-        Number(
-          row.peserta_mulai ??
-          0
-        ),
+    get: (row) =>
+      Number(
+        row.peserta_mulai ??
+        0
+      ),
   },
 
   penonaktifan: {
-    label:
-      'Nonaktif',
+    label: 'Nonaktif',
 
-    get:
-      (
-        row
-      ) =>
-        Number(
-          row.penonaktifan ??
-          0
-        ),
+    get: (row) =>
+      Number(
+        row.penonaktifan ??
+        0
+      ),
   },
 };
 
@@ -218,43 +153,14 @@ function namaBulan(
   return new Intl.DateTimeFormat(
     'id-ID',
     {
-      month:
-        'long',
-
-      year:
-        'numeric',
-
-      timeZone:
-        'Asia/Jakarta',
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'Asia/Jakarta',
     }
   ).format(
     new Date(
       Date.UTC(
         year,
-        month - 1,
-        1
-      )
-    )
-  );
-}
-
-
-function monthNameOnly(
-  month
-) {
-  return new Intl.DateTimeFormat(
-    'id-ID',
-    {
-      month:
-        'long',
-
-      timeZone:
-        'Asia/Jakarta',
-    }
-  ).format(
-    new Date(
-      Date.UTC(
-        2026,
         month - 1,
         1
       )
@@ -269,8 +175,7 @@ function SortButton({
   direction,
   onSort,
   children,
-  align =
-    'center',
+  align = 'center',
 }) {
   const active =
     sortKey ===
@@ -307,21 +212,13 @@ function SortButton({
         direction ===
         'asc' ? (
           <ChevronUp
-            size={
-              12
-            }
-            strokeWidth={
-              2.5
-            }
+            size={12}
+            strokeWidth={2.5}
           />
         ) : (
           <ChevronDown
-            size={
-              12
-            }
-            strokeWidth={
-              2.5
-            }
+            size={12}
+            strokeWidth={2.5}
           />
         )
       ) : (
@@ -385,14 +282,7 @@ function MetricButton({
 
 
 export default function MonthlyRecapTable({
-  data =
-    [],
-
-  filters,
-
-  updateFilter,
-
-  resetFilters,
+  data = [],
 
   sortKey,
 
@@ -413,78 +303,6 @@ export default function MonthlyRecapTable({
     );
 
 
-  const yearOptions =
-    useMemo(
-      () =>
-        Array.from(
-          new Set(
-            data
-              .map(
-                (
-                  row
-                ) =>
-                  String(
-                    row.bulan ??
-                    ''
-                  ).slice(
-                    0,
-                    4
-                  )
-              )
-              .filter(
-                Boolean
-              )
-          )
-        ).sort(
-          (
-            a,
-            b
-          ) =>
-            Number(
-              b
-            ) -
-            Number(
-              a
-            )
-        ),
-      [
-        data,
-      ]
-    );
-
-
-  const monthOptions =
-    useMemo(
-      () =>
-        Array.from(
-          {
-            length:
-              12,
-          },
-          (
-            _,
-            index
-          ) => ({
-            value:
-              String(
-                index +
-                1
-              ).padStart(
-                2,
-                '0'
-              ),
-
-            label:
-              monthNameOnly(
-                index +
-                1
-              ),
-          })
-        ),
-      []
-    );
-
-
   const hasil =
     useMemo(
       () => {
@@ -494,123 +312,12 @@ export default function MonthlyRecapTable({
           ];
 
 
-        /* =========================
-           YEAR FILTER
-        ========================= */
-
-        if (
-          filters.tahun !==
-          'Semua'
-        ) {
-          rows =
-            rows.filter(
-              (
-                row
-              ) =>
-                String(
-                  row.bulan
-                ).startsWith(
-                  `${filters.tahun}-`
-                )
-            );
-        }
-
-
-        /* =========================
-           MONTH FILTER
-        ========================= */
-
-        if (
-          filters.bulan !==
-          'Semua'
-        ) {
-          rows =
-            rows.filter(
-              (
-                row
-              ) =>
-                String(
-                  row.bulan
-                ).slice(
-                  5,
-                  7
-                ) ===
-                filters.bulan
-            );
-        }
-
-
-        /* =========================
-           DIVISION FILTER
-        ========================= */
-
-        if (
-          filters.divisi !==
-          'Semua'
-        ) {
-          const key =
-            DIVISION_META[
-              filters.divisi
-            ]?.key;
-
-
-          if (key) {
-            rows =
-              rows.filter(
-                (
-                  row
-                ) =>
-                  angka(
-                    row[
-                      key
-                    ]
-                  ) >
-                  0
-              );
-          }
-        }
-
-
-        /* =========================
-           STATUS FILTER
-        ========================= */
-
-        const statusKey =
-          STATUS_FILTERS[
-            filters.status
-          ];
-
-
-        if (
-          statusKey
-        ) {
-          rows =
-            rows.filter(
-              (
-                row
-              ) =>
-                angka(
-                  row[
-                    statusKey
-                  ]
-                ) >
-                0
-            );
-        }
-
-
-        /* =========================
-           EMPTY MONTH
-        ========================= */
-
         if (
           hideEmpty
         ) {
           rows =
             rows.filter(
-              (
-                row
-              ) =>
+              (row) =>
                 angka(
                   row.total_pendaftar
                 ) >
@@ -626,10 +333,6 @@ export default function MonthlyRecapTable({
             );
         }
 
-
-        /* =========================
-           SORT
-        ========================= */
 
         const meta =
           SORT_META[
@@ -690,41 +393,11 @@ export default function MonthlyRecapTable({
       },
       [
         data,
-        filters,
         hideEmpty,
         sortKey,
         sortDirection,
       ]
     );
-
-
-  const activeCount =
-    [
-      filters.tahun !==
-        'Semua',
-
-      filters.bulan !==
-        'Semua',
-
-      filters.divisi !==
-        'Semua',
-
-      filters.status !==
-        'Semua',
-
-      hideEmpty,
-    ].filter(
-      Boolean
-    ).length;
-
-
-  function resetSemua() {
-    resetFilters();
-
-    setHideEmpty(
-      false
-    );
-  }
 
 
   return (
@@ -734,334 +407,52 @@ export default function MonthlyRecapTable({
           HEADER
       ================================================= */}
 
-      <div className="border-b border-slate-100 p-5 sm:p-6">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <div className="flex items-center gap-3">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
-                <SlidersHorizontal
-                  size={
-                    19
-                  }
-                />
-              </span>
+      <div className="flex flex-col gap-3 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-lg font-extrabold text-slate-800">
+            Rekap Bulanan
+          </h2>
 
-
-              <div>
-                <h2 className="text-lg font-extrabold text-slate-800">
-                  Rekap Bulanan
-                </h2>
-
-                <p className="mt-0.5 text-[11px] leading-relaxed text-slate-400">
-                  Filter, urutkan,
-                  lalu klik angka
-                  untuk membuka
-                  data penyusunnya.
-                </p>
-              </div>
-            </div>
-          </div>
-
-
-          <div className="flex items-center gap-2">
-            {activeCount >
-              0 && (
-              <span className="rounded-full bg-indigo-50 px-3 py-1.5 text-[10px] font-bold text-indigo-600">
-                <Filter
-                  size={
-                    10
-                  }
-                  className="mr-1 inline"
-                />
-
-                {
-                  activeCount
-                }{' '}
-                filter aktif
-              </span>
-            )}
-
-
-            <button
-              type="button"
-              onClick={
-                resetSemua
-              }
-              disabled={
-                activeCount ===
-                0
-              }
-              className="btn-press inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-[10px] font-bold text-slate-500 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <RotateCcw
-                size={
-                  13
-                }
-              />
-
-              Reset
-            </button>
-          </div>
+          <p className="mt-1 text-[11px] leading-relaxed text-slate-400">
+            Data sudah mengikuti
+            Filter Statistik global
+            di bagian atas halaman.
+            Klik angka untuk membuka
+            data penyusunnya.
+          </p>
         </div>
 
 
-        {/* =================================================
-            FILTER PANEL
-        ================================================= */}
+        <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+          <input
+            type="checkbox"
+            checked={
+              hideEmpty
+            }
+            onChange={(
+              e
+            ) =>
+              setHideEmpty(
+                e.target.checked
+              )
+            }
+            className="h-4 w-4 rounded border-slate-300 text-indigo-600"
+          />
 
-        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
-          {/* YEAR */}
+          <EyeOff
+            size={13}
+            className="text-slate-400"
+          />
 
-          <label className="block">
-            <span className="mb-1.5 block text-[9px] font-bold uppercase tracking-wider text-slate-400">
-              Tahun
-            </span>
-
-            <select
-              value={
-                filters.tahun
-              }
-              onChange={(
-                e
-              ) =>
-                updateFilter(
-                  'tahun',
-                  e.target
-                    .value
-                )
-              }
-              className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-            >
-              <option value="Semua">
-                Semua Tahun
-              </option>
-
-              {yearOptions.map(
-                (
-                  year
-                ) => (
-                  <option
-                    key={
-                      year
-                    }
-                    value={
-                      year
-                    }
-                  >
-                    {
-                      year
-                    }
-                  </option>
-                )
-              )}
-            </select>
-          </label>
-
-
-          {/* MONTH */}
-
-          <label className="block">
-            <span className="mb-1.5 block text-[9px] font-bold uppercase tracking-wider text-slate-400">
-              Bulan
-            </span>
-
-            <select
-              value={
-                filters.bulan
-              }
-              onChange={(
-                e
-              ) =>
-                updateFilter(
-                  'bulan',
-                  e.target
-                    .value
-                )
-              }
-              className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-            >
-              <option value="Semua">
-                Semua Bulan
-              </option>
-
-              {monthOptions.map(
-                (
-                  item
-                ) => (
-                  <option
-                    key={
-                      item.value
-                    }
-                    value={
-                      item.value
-                    }
-                  >
-                    {
-                      item.label
-                    }
-                  </option>
-                )
-              )}
-            </select>
-          </label>
-
-
-          {/* DIVISION */}
-
-          <label className="block">
-            <span className="mb-1.5 block text-[9px] font-bold uppercase tracking-wider text-slate-400">
-              Fokus Divisi
-            </span>
-
-            <select
-              value={
-                filters.divisi
-              }
-              onChange={(
-                e
-              ) =>
-                updateFilter(
-                  'divisi',
-                  e.target
-                    .value
-                )
-              }
-              className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-            >
-              <option value="Semua">
-                Semua Divisi
-              </option>
-
-              {Object.keys(
-                DIVISION_META
-              ).map(
-                (
-                  divisi
-                ) => (
-                  <option
-                    key={
-                      divisi
-                    }
-                    value={
-                      divisi
-                    }
-                  >
-                    {
-                      divisi
-                    }
-                  </option>
-                )
-              )}
-            </select>
-          </label>
-
-
-          {/* STATUS */}
-
-          <label className="block">
-            <span className="mb-1.5 block text-[9px] font-bold uppercase tracking-wider text-slate-400">
-              Status Pendaftaran
-            </span>
-
-            <select
-              value={
-                [
-                  'Semua',
-                  'Approved',
-                  'Pending',
-                  'Rejected',
-                ].includes(
-                  filters.status
-                )
-                  ? filters.status
-                  : 'Semua'
-              }
-              onChange={(
-                e
-              ) =>
-                updateFilter(
-                  'status',
-                  e.target
-                    .value
-                )
-              }
-              className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-            >
-              <option value="Semua">
-                Semua Status
-              </option>
-
-              <option value="Approved">
-                Diterima
-              </option>
-
-              <option value="Pending">
-                Pending
-              </option>
-
-              <option value="Rejected">
-                Ditolak
-              </option>
-            </select>
-          </label>
-
-
-          {/* HIDE EMPTY */}
-
-          <label className="flex cursor-pointer items-end">
-            <span className="flex h-12 w-full items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 transition hover:bg-slate-100">
-              <input
-                type="checkbox"
-                checked={
-                  hideEmpty
-                }
-                onChange={(
-                  e
-                ) =>
-                  setHideEmpty(
-                    e.target
-                      .checked
-                  )
-                }
-                className="h-4 w-4 shrink-0 rounded border-slate-300 text-indigo-600"
-              />
-
-              <span className="text-[10px] font-bold leading-tight text-slate-600">
-                Sembunyikan
-                bulan kosong
-              </span>
-            </span>
-          </label>
-        </div>
-
-
-        {filters.divisi !==
-          'Semua' && (
-          <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2">
-            <p className="text-[10px] leading-relaxed text-blue-700">
-              💡 Fokus divisi{' '}
-
-              <b>
-                {
-                  filters.divisi
-                }
-              </b>{' '}
-
-              menyaring bulan
-              yang memiliki
-              aktivitas divisi
-              tersebut. Angka
-              statistik tetap
-              merupakan total
-              bulanan.
-            </p>
-          </div>
-        )}
+          <span className="text-[9px] font-bold text-slate-600">
+            Sembunyikan bulan kosong
+          </span>
+        </label>
       </div>
 
 
       {/* =================================================
-          RESULT SUMMARY
+          SUMMARY
       ================================================= */}
 
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 bg-slate-50/60 px-5 py-3">
@@ -1074,15 +465,7 @@ export default function MonthlyRecapTable({
             }
           </b>{' '}
 
-          dari{' '}
-
-          <b className="text-slate-700">
-            {
-              data.length
-            }
-          </b>{' '}
-
-          bulan
+          periode
         </p>
 
 
@@ -1111,37 +494,21 @@ export default function MonthlyRecapTable({
       <div className="overflow-x-auto">
         <table className="w-full min-w-[1180px] table-fixed text-xs">
 
-          {/*
-            Fixed column widths = posisi header dan isi
-            selalu presisi.
-
-            Total = 100%
-          */}
           <colgroup>
             <col className="w-[17%]" />
-
             <col className="w-[9%]" />
-
             <col className="w-[9%]" />
-
             <col className="w-[9%]" />
-
             <col className="w-[9%]" />
-
             <col className="w-[10%]" />
-
             <col className="w-[9%]" />
-
             <col className="w-[28%]" />
           </colgroup>
 
 
           <thead className="bg-white text-[10px] uppercase tracking-wider">
             <tr className="border-b border-slate-100">
-
-              {/* BULAN */}
-
-              <th className="px-5 py-4 text-left align-middle">
+              <th className="px-5 py-4 text-left">
                 <SortButton
                   sortKey="bulan"
                   currentKey={
@@ -1160,9 +527,7 @@ export default function MonthlyRecapTable({
               </th>
 
 
-              {/* PENDAFTAR */}
-
-              <th className="px-2 py-4 text-center align-middle">
+              <th className="px-2 py-4 text-center">
                 <SortButton
                   sortKey="pendaftar"
                   currentKey={
@@ -1180,9 +545,7 @@ export default function MonthlyRecapTable({
               </th>
 
 
-              {/* DITERIMA */}
-
-              <th className="px-2 py-4 text-center align-middle">
+              <th className="px-2 py-4 text-center">
                 <SortButton
                   sortKey="diterima"
                   currentKey={
@@ -1200,9 +563,7 @@ export default function MonthlyRecapTable({
               </th>
 
 
-              {/* PENDING */}
-
-              <th className="px-2 py-4 text-center align-middle">
+              <th className="px-2 py-4 text-center">
                 <SortButton
                   sortKey="pending"
                   currentKey={
@@ -1220,9 +581,7 @@ export default function MonthlyRecapTable({
               </th>
 
 
-              {/* DITOLAK */}
-
-              <th className="px-2 py-4 text-center align-middle">
+              <th className="px-2 py-4 text-center">
                 <SortButton
                   sortKey="ditolak"
                   currentKey={
@@ -1240,9 +599,7 @@ export default function MonthlyRecapTable({
               </th>
 
 
-              {/* MULAI */}
-
-              <th className="px-2 py-4 text-center align-middle">
+              <th className="px-2 py-4 text-center">
                 <SortButton
                   sortKey="peserta_mulai"
                   currentKey={
@@ -1260,9 +617,7 @@ export default function MonthlyRecapTable({
               </th>
 
 
-              {/* NONAKTIF */}
-
-              <th className="px-2 py-4 text-center align-middle">
+              <th className="px-2 py-4 text-center">
                 <SortButton
                   sortKey="penonaktifan"
                   currentKey={
@@ -1280,12 +635,8 @@ export default function MonthlyRecapTable({
               </th>
 
 
-              {/* DIVISI */}
-
-              <th className="px-4 py-4 text-center align-middle">
-                <span className="font-bold text-slate-400">
-                  Divisi
-                </span>
+              <th className="px-4 py-4 text-center font-bold text-slate-400">
+                Divisi
               </th>
             </tr>
           </thead>
@@ -1296,41 +647,33 @@ export default function MonthlyRecapTable({
             0 ? (
               <tr>
                 <td
-                  colSpan={
-                    8
-                  }
+                  colSpan={8}
                   className="px-4 py-14 text-center"
                 >
                   <p className="text-3xl">
-                    🔎
+                    📭
                   </p>
 
                   <p className="mt-2 text-sm font-bold text-slate-600">
-                    Tidak Ada Hasil
+                    Tidak ada data
                   </p>
 
                   <p className="mt-1 text-xs text-slate-400">
-                    Coba ubah
-                    atau reset
-                    filter.
+                    Coba ubah Filter
+                    Statistik global.
                   </p>
                 </td>
               </tr>
             ) : (
               hasil.map(
-                (
-                  item
-                ) => (
+                (item) => (
                   <tr
                     key={
                       item.bulan
                     }
-                    className="group h-[72px] transition hover:bg-indigo-50/30"
+                    className="h-[72px] transition hover:bg-indigo-50/30"
                   >
-
-                    {/* BULAN */}
-
-                    <td className="px-5 py-3 align-middle">
+                    <td className="px-5 py-3">
                       <button
                         type="button"
                         onClick={() =>
@@ -1339,30 +682,28 @@ export default function MonthlyRecapTable({
                             'pendaftar'
                           )
                         }
-                        className="group/month block w-full text-left"
+                        className="block w-full text-left"
                       >
-                        <p className="whitespace-nowrap text-sm font-extrabold text-slate-700 transition group-hover/month:text-indigo-600">
+                        <p className="whitespace-nowrap text-sm font-extrabold text-slate-700 hover:text-indigo-600">
                           {namaBulan(
                             item.bulan
                           )}
                         </p>
 
-                        <p className="mt-1 whitespace-nowrap text-[9px] font-semibold text-slate-400">
+                        <p className="mt-1 text-[9px] font-semibold text-slate-400">
                           Klik untuk eksplorasi
                         </p>
                       </button>
                     </td>
 
 
-                    {/* PENDAFTAR */}
-
-                    <td className="px-2 py-3 text-center align-middle">
+                    <td className="px-2 py-3 text-center">
                       <MetricButton
                         value={
                           item.total_pendaftar
                         }
                         tone="indigo"
-                        title="Lihat pendaftar bulan ini"
+                        title="Lihat pendaftar"
                         onClick={() =>
                           onMetricClick?.(
                             item,
@@ -1373,15 +714,13 @@ export default function MonthlyRecapTable({
                     </td>
 
 
-                    {/* DITERIMA */}
-
-                    <td className="px-2 py-3 text-center align-middle">
+                    <td className="px-2 py-3 text-center">
                       <MetricButton
                         value={
                           item.diterima
                         }
                         tone="green"
-                        title="Lihat pendaftar diterima"
+                        title="Lihat diterima"
                         onClick={() =>
                           onMetricClick?.(
                             item,
@@ -1392,15 +731,13 @@ export default function MonthlyRecapTable({
                     </td>
 
 
-                    {/* PENDING */}
-
-                    <td className="px-2 py-3 text-center align-middle">
+                    <td className="px-2 py-3 text-center">
                       <MetricButton
                         value={
                           item.pending
                         }
                         tone="amber"
-                        title="Lihat pendaftar pending"
+                        title="Lihat pending"
                         onClick={() =>
                           onMetricClick?.(
                             item,
@@ -1411,15 +748,13 @@ export default function MonthlyRecapTable({
                     </td>
 
 
-                    {/* DITOLAK */}
-
-                    <td className="px-2 py-3 text-center align-middle">
+                    <td className="px-2 py-3 text-center">
                       <MetricButton
                         value={
                           item.ditolak
                         }
                         tone="red"
-                        title="Lihat pendaftar ditolak"
+                        title="Lihat ditolak"
                         onClick={() =>
                           onMetricClick?.(
                             item,
@@ -1430,15 +765,13 @@ export default function MonthlyRecapTable({
                     </td>
 
 
-                    {/* MULAI */}
-
-                    <td className="px-2 py-3 text-center align-middle">
+                    <td className="px-2 py-3 text-center">
                       <MetricButton
                         value={
                           item.peserta_mulai
                         }
                         tone="slate"
-                        title="Lihat peserta mulai magang"
+                        title="Lihat peserta mulai"
                         onClick={() =>
                           onMetricClick?.(
                             item,
@@ -1449,15 +782,13 @@ export default function MonthlyRecapTable({
                     </td>
 
 
-                    {/* NONAKTIF */}
-
-                    <td className="px-2 py-3 text-center align-middle">
+                    <td className="px-2 py-3 text-center">
                       <MetricButton
                         value={
                           item.penonaktifan
                         }
                         tone="red"
-                        title="Lihat penonaktifan bulan ini"
+                        title="Lihat penonaktifan"
                         onClick={() =>
                           onMetricClick?.(
                             item,
@@ -1468,30 +799,21 @@ export default function MonthlyRecapTable({
                     </td>
 
 
-                    {/* DIVISI */}
-
-                    <td className="px-4 py-3 align-middle">
+                    <td className="px-4 py-3">
                       <div className="grid w-full grid-cols-4 gap-2">
                         {Object.entries(
                           DIVISION_META
                         ).map(
-                          (
-                            [
-                              divisi,
-                              meta,
-                            ]
-                          ) => {
+                          ([
+                            divisi,
+                            meta,
+                          ]) => {
                             const value =
                               angka(
                                 item[
                                   meta.key
                                 ]
                               );
-
-
-                            const active =
-                              filters.divisi ===
-                              divisi;
 
 
                             return (
@@ -1507,13 +829,11 @@ export default function MonthlyRecapTable({
                                   )
                                 }
                                 title={`${divisi}: ${value}`}
-                                className={`flex h-9 min-w-0 items-center justify-center gap-1 rounded-xl px-2 text-[9px] font-bold tabular-nums transition active:scale-95 ${
-                                  active
-                                    ? 'bg-indigo-600 text-white shadow-sm'
-                                    : value >
-                                        0
-                                      ? 'bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600'
-                                      : 'bg-slate-50 text-slate-300'
+                                className={`flex h-9 items-center justify-center gap-1 rounded-xl px-2 text-[9px] font-bold tabular-nums transition active:scale-95 ${
+                                  value >
+                                  0
+                                    ? 'bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600'
+                                    : 'bg-slate-50 text-slate-300'
                                 }`}
                               >
                                 <span>
@@ -1548,12 +868,8 @@ export default function MonthlyRecapTable({
       </div>
 
 
-      {/* =================================================
-          LEGEND
-      ================================================= */}
-
       <div className="border-t border-slate-100 bg-slate-50/50 px-5 py-3.5">
-        <div className="flex flex-wrap items-center justify-end gap-x-5 gap-y-1 text-[9px] font-medium text-slate-400">
+        <div className="flex flex-wrap justify-end gap-x-5 gap-y-1 text-[9px] font-medium text-slate-400">
           <span>
             📋 A = Admin
           </span>

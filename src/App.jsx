@@ -16,6 +16,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Register from './pages/Public/Register';
 
+
 // ==================== ADMIN ====================
 
 import AdminHome from './pages/Admin/AdminHome';
@@ -29,6 +30,8 @@ import SertifikatAdmin from './pages/Admin/SertifikatAdmin';
 import ManajemenMentor from './pages/Admin/ManajemenMentor';
 import KuotaDivisi from './pages/Admin/KuotaDivisi';
 import Statistik from './pages/Admin/Statistik';
+import ProvisionLegacyAccounts from './pages/Admin/ProvisionLegacyAccounts';
+
 
 // ==================== INTERN ====================
 
@@ -40,12 +43,14 @@ import Izin from './pages/Intern/Izin';
 import Mentoring from './pages/Intern/Mentoring';
 import Sertifikat from './pages/Intern/Sertifikat';
 
+
 // ==================== MENTOR ====================
 
 import DashboardMentor from './pages/Mentor/Dashboard';
 import KelompokBinaan from './pages/Mentor/KelompokBinaan';
 import MentoringMentor from './pages/Mentor/Mentoring';
 import Penilaian from './pages/Mentor/Penilaian';
+
 
 // ==================== SETTING ====================
 
@@ -55,6 +60,7 @@ import Kontak from './pages/setting/Kontak';
 import Tampilan from './pages/setting/Tampilan';
 import Tentang from './pages/setting/Tentang';
 
+
 function RootRedirect() {
   const {
     user,
@@ -62,9 +68,11 @@ function RootRedirect() {
     loading,
   } = useAuth();
 
+
   if (loading) {
     return null;
   }
+
 
   if (!user) {
     return (
@@ -75,6 +83,7 @@ function RootRedirect() {
     );
   }
 
+
   return (
     <Navigate
       to={`/${profile?.role ?? 'intern'}`}
@@ -83,12 +92,15 @@ function RootRedirect() {
   );
 }
 
+
 export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* PUBLIC */}
+
+          {/* ==================== PUBLIC ==================== */}
+
           <Route
             path="/"
             element={<RootRedirect />}
@@ -104,6 +116,7 @@ export default function App() {
             element={<Register />}
           />
 
+
           {/* ==================== ADMIN ==================== */}
 
           <Route
@@ -116,6 +129,7 @@ export default function App() {
             <Route
               element={<Layout />}
             >
+
               <Route
                 path="/admin"
                 element={
@@ -193,7 +207,18 @@ export default function App() {
                 }
               />
 
-              {/* SETTING ADMIN */}
+
+              {/* ==================== TEMP PROVISIONING ==================== */}
+
+              <Route
+                path="/admin/provision-legacy"
+                element={
+                  <ProvisionLegacyAccounts />
+                }
+              />
+
+
+              {/* ==================== SETTING ADMIN ==================== */}
 
               <Route
                 path="/admin/setting/akun"
@@ -216,6 +241,9 @@ export default function App() {
                 }
               />
 
+
+              {/* FALLBACK ADMIN */}
+
               <Route
                 path="/admin/*"
                 element={
@@ -225,8 +253,10 @@ export default function App() {
                   />
                 }
               />
+
             </Route>
           </Route>
+
 
           {/* ==================== INTERN ==================== */}
 
@@ -240,6 +270,7 @@ export default function App() {
             <Route
               element={<Layout />}
             >
+
               <Route
                 path="/intern"
                 element={
@@ -289,7 +320,8 @@ export default function App() {
                 }
               />
 
-              {/* SETTING INTERN */}
+
+              {/* ==================== SETTING INTERN ==================== */}
 
               <Route
                 path="/intern/setting/akun"
@@ -326,6 +358,9 @@ export default function App() {
                 }
               />
 
+
+              {/* FALLBACK INTERN */}
+
               <Route
                 path="/intern/*"
                 element={
@@ -335,8 +370,10 @@ export default function App() {
                   />
                 }
               />
+
             </Route>
           </Route>
+
 
           {/* ==================== MENTOR ==================== */}
 
@@ -350,6 +387,7 @@ export default function App() {
             <Route
               element={<Layout />}
             >
+
               <Route
                 path="/mentor"
                 element={
@@ -378,7 +416,8 @@ export default function App() {
                 }
               />
 
-              {/* SETTING MENTOR */}
+
+              {/* ==================== SETTING MENTOR ==================== */}
 
               <Route
                 path="/mentor/setting/akun"
@@ -415,6 +454,9 @@ export default function App() {
                 }
               />
 
+
+              {/* FALLBACK MENTOR */}
+
               <Route
                 path="/mentor/*"
                 element={
@@ -424,10 +466,12 @@ export default function App() {
                   />
                 }
               />
+
             </Route>
           </Route>
 
-          {/* FALLBACK */}
+
+          {/* ==================== GLOBAL FALLBACK ==================== */}
 
           <Route
             path="*"
@@ -438,6 +482,7 @@ export default function App() {
               />
             }
           />
+
         </Routes>
       </BrowserRouter>
     </AuthProvider>

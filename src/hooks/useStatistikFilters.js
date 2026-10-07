@@ -1,11 +1,45 @@
 import {
-  useCallback,
   useMemo,
   useState,
 } from 'react';
 
 
-const DEFAULT_FILTERS = {
+export const STATISTIK_DIVISI = [
+  'Semua',
+  'Admin',
+  'Sosmed',
+  'Marketplace',
+  'Web Developer',
+];
+
+
+export const STATISTIK_STATUS_PENDAFTARAN = [
+  'Semua',
+  'Approved',
+  'Pending',
+  'Rejected',
+];
+
+
+export const STATISTIK_STATUS_MAGANG = [
+  'Semua',
+  'Active',
+  'Completed',
+  'Dropped',
+];
+
+
+export const STATISTIK_METRIC = [
+  'pendaftar',
+  'diterima',
+  'pending',
+  'ditolak',
+  'mulai',
+  'nonaktif',
+];
+
+
+export const DEFAULT_FILTERS = {
   rangeBulan:
     12,
 
@@ -18,7 +52,15 @@ const DEFAULT_FILTERS = {
   divisi:
     'Semua',
 
+  jurusan:
+    'Semua',
+
+  // Tetap memakai nama "status"
+  // untuk kompatibilitas komponen lama.
   status:
+    'Semua',
+
+  statusMagang:
     'Semua',
 
   metric:
@@ -32,74 +74,6 @@ const DEFAULT_FILTERS = {
 };
 
 
-export const STATISTIK_DIVISI = [
-  'Semua',
-  'Admin',
-  'Sosmed',
-  'Marketplace',
-  'Web Developer',
-];
-
-
-export const STATISTIK_STATUS = [
-  'Semua',
-  'Approved',
-  'Pending',
-  'Rejected',
-];
-
-
-export const STATISTIK_METRIC = [
-  {
-    value:
-      'pendaftar',
-
-    label:
-      'Total Pendaftar',
-  },
-
-  {
-    value:
-      'diterima',
-
-    label:
-      'Diterima',
-  },
-
-  {
-    value:
-      'pending',
-
-    label:
-      'Pending',
-  },
-
-  {
-    value:
-      'ditolak',
-
-    label:
-      'Ditolak',
-  },
-
-  {
-    value:
-      'mulai',
-
-    label:
-      'Mulai Magang',
-  },
-
-  {
-    value:
-      'nonaktif',
-
-    label:
-      'Nonaktif',
-  },
-];
-
-
 export function useStatistikFilters() {
   const [
     filters,
@@ -110,139 +84,144 @@ export function useStatistikFilters() {
     );
 
 
-  const updateFilter =
-    useCallback(
+  function updateFilter(
+    key,
+    value
+  ) {
+    setFilters(
       (
-        key,
-        value
-      ) => {
-        setFilters(
-          (
-            previous
-          ) => ({
-            ...previous,
-
-            [key]:
-              value,
-          })
-        );
-      },
-      []
+        previous
+      ) => ({
+        ...previous,
+        [key]:
+          value,
+      })
     );
+  }
 
 
   /*
-    Reset hanya filter tabel.
+    Reset hanya filter statistik global.
 
-    rangeBulan dan metric grafik
-    sengaja dipertahankan.
+    Metric chart + sorting tabel tetap
+    dipertahankan agar UX tidak terasa
+    "loncat" setelah reset.
   */
-  const resetFilters =
-    useCallback(
-      () => {
-        setFilters(
-          (
-            previous
-          ) => ({
+  function resetFilters() {
+    setFilters(
+      (
+        previous
+      ) => ({
+        ...previous,
+
+        rangeBulan:
+          DEFAULT_FILTERS.rangeBulan,
+
+        tahun:
+          DEFAULT_FILTERS.tahun,
+
+        bulan:
+          DEFAULT_FILTERS.bulan,
+
+        divisi:
+          DEFAULT_FILTERS.divisi,
+
+        jurusan:
+          DEFAULT_FILTERS.jurusan,
+
+        status:
+          DEFAULT_FILTERS.status,
+
+        statusMagang:
+          DEFAULT_FILTERS.statusMagang,
+      })
+    );
+  }
+
+
+  function resetAll() {
+    setFilters(
+      DEFAULT_FILTERS
+    );
+  }
+
+
+  function toggleSort(
+    key
+  ) {
+    setFilters(
+      (
+        previous
+      ) => {
+        if (
+          previous.sortKey ===
+          key
+        ) {
+          return {
             ...previous,
 
-            tahun:
-              'Semua',
-
-            bulan:
-              'Semua',
-
-            divisi:
-              'Semua',
-
-            status:
-              'Semua',
-
-            sortKey:
-              'bulan',
-
             sortDirection:
-              'desc',
-          })
-        );
-      },
-      []
+              previous.sortDirection ===
+              'asc'
+                ? 'desc'
+                : 'asc',
+          };
+        }
+
+
+        return {
+          ...previous,
+
+          sortKey:
+            key,
+
+          sortDirection:
+            key ===
+            'bulan'
+              ? 'desc'
+              : 'desc',
+        };
+      }
     );
+  }
 
 
-  const resetAll =
-    useCallback(
-      () => {
-        setFilters(
-          DEFAULT_FILTERS
-        );
-      },
-      []
-    );
+  const activeFilterCount =
+    useMemo(
+      () =>
+        [
+          filters.rangeBulan !==
+            DEFAULT_FILTERS.rangeBulan,
 
+          filters.tahun !==
+            'Semua',
 
-  const toggleSort =
-    useCallback(
-      (
-        key
-      ) => {
-        setFilters(
-          (
-            previous
-          ) => {
-            if (
-              previous.sortKey ===
-              key
-            ) {
-              return {
-                ...previous,
+          filters.bulan !==
+            'Semua',
 
-                sortDirection:
-                  previous.sortDirection ===
-                  'asc'
-                    ? 'desc'
-                    : 'asc',
-              };
-            }
+          filters.divisi !==
+            'Semua',
 
+          filters.jurusan !==
+            'Semua',
 
-            return {
-              ...previous,
+          filters.status !==
+            'Semua',
 
-              sortKey:
-                key,
-
-              sortDirection:
-                key ===
-                'bulan'
-                  ? 'desc'
-                  : 'desc',
-            };
-          }
-        );
-      },
-      []
+          filters.statusMagang !==
+            'Semua',
+        ].filter(
+          Boolean
+        ).length,
+      [
+        filters,
+      ]
     );
 
 
   const hasActiveFilter =
-    useMemo(
-      () =>
-        filters.tahun !==
-          'Semua' ||
-        filters.bulan !==
-          'Semua' ||
-        filters.divisi !==
-          'Semua' ||
-        filters.status !==
-          'Semua',
-      [
-        filters.tahun,
-        filters.bulan,
-        filters.divisi,
-        filters.status,
-      ]
-    );
+    activeFilterCount >
+    0;
 
 
   return {
@@ -257,5 +236,7 @@ export function useStatistikFilters() {
     toggleSort,
 
     hasActiveFilter,
+
+    activeFilterCount,
   };
 }

@@ -4,6 +4,8 @@ import {
   useState,
 } from 'react';
 
+import * as XLSX from 'xlsx';
+
 import {
   Activity,
   AlertTriangle,
@@ -41,6 +43,155 @@ import {
 } from '../../lib/statisticsExplorer';
 
 
+/* =========================================================
+   EXCEL EXPORT HELPERS — FASE 5-9E.3
+========================================================= */
+
+function excelSafe(value) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ''
+  ) {
+    return '-';
+  }
+
+  return value;
+}
+
+
+function waktuExportWib() {
+  return new Intl.DateTimeFormat(
+    'id-ID',
+    {
+      timeZone:
+        'Asia/Jakarta',
+
+      dateStyle:
+        'full',
+
+      timeStyle:
+        'medium',
+    }
+  ).format(
+    new Date()
+  );
+}
+
+
+function tanggalNamaFile() {
+  return new Intl.DateTimeFormat(
+    'en-CA',
+    {
+      timeZone:
+        'Asia/Jakarta',
+
+      year:
+        'numeric',
+
+      month:
+        '2-digit',
+
+      day:
+        '2-digit',
+    }
+  )
+    .format(
+      new Date()
+    )
+    .replaceAll(
+      '-',
+      ''
+    );
+}
+
+
+function buatSheet(
+  rows,
+  widths = []
+) {
+  const isi =
+    Array.isArray(
+      rows
+    ) &&
+    rows.length > 0
+      ? rows
+      : [
+          {
+            Informasi:
+              'Tidak ada data untuk filter aktif.',
+          },
+        ];
+
+
+  const worksheet =
+    XLSX.utils.json_to_sheet(
+      isi
+    );
+
+
+  if (
+    widths.length >
+    0
+  ) {
+    worksheet[
+      '!cols'
+    ] =
+      widths.map(
+        (
+          width
+        ) => ({
+          wch:
+            width,
+        })
+      );
+  }
+
+
+  if (
+    worksheet[
+      '!ref'
+    ] &&
+    Array.isArray(
+      rows
+    ) &&
+    rows.length >
+      0
+  ) {
+    worksheet[
+      '!autofilter'
+    ] = {
+      ref:
+        worksheet[
+          '!ref'
+        ],
+    };
+  }
+
+
+  return worksheet;
+}
+
+
+function labelFilter(
+  value
+) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === '' ||
+    value === 'Semua'
+  ) {
+    return 'Semua';
+  }
+
+
+  return String(
+    value
+  );
+}
+
+
 function angka(
   value
 ) {
@@ -49,6 +200,7 @@ function angka(
       value ??
       0
     );
+
 
   return Number.isFinite(
     n
@@ -65,6 +217,7 @@ function persen(
     Number(
       value
     );
+
 
   return Number.isFinite(
     n
@@ -176,6 +329,7 @@ function CountUp({
 
       let frame;
 
+
       const start =
         performance.now();
 
@@ -263,53 +417,103 @@ function KartuRingkasan({
   const toneClass =
     {
       indigo: {
-        bg: 'bg-indigo-50',
-        icon: 'text-indigo-600',
-        value: 'text-indigo-700',
+        bg:
+          'bg-indigo-50',
+
+        icon:
+          'text-indigo-600',
+
+        value:
+          'text-indigo-700',
+
         hover:
           'hover:border-indigo-200 hover:bg-indigo-50/30',
-        detail: 'text-indigo-500',
-        line: 'bg-indigo-500',
+
+        detail:
+          'text-indigo-500',
+
+        line:
+          'bg-indigo-500',
       },
 
       green: {
-        bg: 'bg-green-50',
-        icon: 'text-green-600',
-        value: 'text-green-700',
+        bg:
+          'bg-green-50',
+
+        icon:
+          'text-green-600',
+
+        value:
+          'text-green-700',
+
         hover:
           'hover:border-green-200 hover:bg-green-50/30',
-        detail: 'text-green-600',
-        line: 'bg-green-500',
+
+        detail:
+          'text-green-600',
+
+        line:
+          'bg-green-500',
       },
 
       amber: {
-        bg: 'bg-amber-50',
-        icon: 'text-amber-600',
-        value: 'text-amber-700',
+        bg:
+          'bg-amber-50',
+
+        icon:
+          'text-amber-600',
+
+        value:
+          'text-amber-700',
+
         hover:
           'hover:border-amber-200 hover:bg-amber-50/30',
-        detail: 'text-amber-600',
-        line: 'bg-amber-500',
+
+        detail:
+          'text-amber-600',
+
+        line:
+          'bg-amber-500',
       },
 
       red: {
-        bg: 'bg-red-50',
-        icon: 'text-red-600',
-        value: 'text-red-700',
+        bg:
+          'bg-red-50',
+
+        icon:
+          'text-red-600',
+
+        value:
+          'text-red-700',
+
         hover:
           'hover:border-red-200 hover:bg-red-50/30',
-        detail: 'text-red-500',
-        line: 'bg-red-500',
+
+        detail:
+          'text-red-500',
+
+        line:
+          'bg-red-500',
       },
 
       slate: {
-        bg: 'bg-slate-50',
-        icon: 'text-slate-600',
-        value: 'text-slate-800',
+        bg:
+          'bg-slate-50',
+
+        icon:
+          'text-slate-600',
+
+        value:
+          'text-slate-800',
+
         hover:
           'hover:border-slate-300 hover:bg-slate-50',
-        detail: 'text-slate-500',
-        line: 'bg-slate-400',
+
+        detail:
+          'text-slate-500',
+
+        line:
+          'bg-slate-400',
       },
     }[
       tone
@@ -324,15 +528,19 @@ function KartuRingkasan({
       }
       className={`group relative w-full overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg active:translate-y-0 active:scale-[0.99] ${toneClass.hover}`}
     >
+
       <div className="flex items-start justify-between gap-3">
+
         <div>
+
           <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-            {
-              label
-            }
+            {label}
           </p>
 
-          <p className={`mt-2 text-3xl font-extrabold tabular-nums ${toneClass.value}`}>
+
+          <p
+            className={`mt-2 text-3xl font-extrabold tabular-nums ${toneClass.value}`}
+          >
             <CountUp
               value={
                 value
@@ -340,15 +548,17 @@ function KartuRingkasan({
             />
           </p>
 
+
           {detail && (
             <p className="mt-1 text-xs text-slate-400">
-              {
-                detail
-              }
+              {detail}
             </p>
           )}
 
-          <div className={`mt-3 flex items-center gap-1 text-[10px] font-bold ${toneClass.detail}`}>
+
+          <div
+            className={`mt-3 flex items-center gap-1 text-[10px] font-bold ${toneClass.detail}`}
+          >
             Lihat detail
 
             <ChevronRight
@@ -356,10 +566,13 @@ function KartuRingkasan({
               className="transition-transform duration-300 group-hover:translate-x-1"
             />
           </div>
+
         </div>
 
 
-        <div className={`flex h-11 w-11 items-center justify-center rounded-xl transition-transform duration-300 group-hover:rotate-3 group-hover:scale-110 ${toneClass.bg}`}>
+        <div
+          className={`flex h-11 w-11 items-center justify-center rounded-xl transition-transform duration-300 group-hover:rotate-3 group-hover:scale-110 ${toneClass.bg}`}
+        >
           <Icon
             size={21}
             className={
@@ -367,10 +580,14 @@ function KartuRingkasan({
             }
           />
         </div>
+
       </div>
 
 
-      <div className={`absolute bottom-0 left-0 h-0.5 w-0 transition-all duration-500 group-hover:w-full ${toneClass.line}`} />
+      <div
+        className={`absolute bottom-0 left-0 h-0.5 w-0 transition-all duration-500 group-hover:w-full ${toneClass.line}`}
+      />
+
     </button>
   );
 }
@@ -441,6 +658,24 @@ export default function Statistik() {
 
 
   const [
+    exportBusy,
+    setExportBusy,
+  ] =
+    useState(
+      false
+    );
+
+
+  const [
+    exportMessage,
+    setExportMessage,
+  ] =
+    useState(
+      null
+    );
+
+
+  const [
     yearOptions,
     setYearOptions,
   ] =
@@ -463,12 +698,23 @@ export default function Statistik() {
     setExplorer,
   ] =
     useState({
-      open: false,
-      title: '',
-      subtitle: '',
-      rows: [],
-      loading: false,
-      error: null,
+      open:
+        false,
+
+      title:
+        '',
+
+      subtitle:
+        '',
+
+      rows:
+        [],
+
+      loading:
+        false,
+
+      error:
+        null,
     });
 
 
@@ -554,7 +800,9 @@ export default function Statistik() {
                     []
                   )
                     .map(
-                      (item) =>
+                      (
+                        item
+                      ) =>
                         Number(
                           item.tahun
                         )
@@ -588,7 +836,9 @@ export default function Statistik() {
                     []
                   )
                     .map(
-                      (item) =>
+                      (
+                        item
+                      ) =>
                         item.jurusan
                     )
                     .filter(
@@ -611,6 +861,7 @@ export default function Statistik() {
               )
             );
           }
+
         } catch (
           err
         ) {
@@ -644,6 +895,7 @@ export default function Statistik() {
         setLoading(
           true
         );
+
 
         setError(
           null
@@ -730,10 +982,13 @@ export default function Statistik() {
             hasil
           );
 
+
           setGeneratedAt(
             hasil.generated_at ??
             null
           );
+
+
         } catch (
           err
         ) {
@@ -741,6 +996,7 @@ export default function Statistik() {
             err?.message ??
             'Gagal mengambil statistik.'
           );
+
         } finally {
           setLoading(
             false
@@ -811,19 +1067,890 @@ export default function Statistik() {
 
   const tingkatDiterima =
     angka(
-      ringkasan.pendaftaran_total
+      ringkasan
+        .pendaftaran_total
     ) >
     0
       ? (
           angka(
-            ringkasan.pendaftaran_diterima
+            ringkasan
+              .pendaftaran_diterima
           ) /
           angka(
-            ringkasan.pendaftaran_total
+            ringkasan
+              .pendaftaran_total
           )
         ) *
         100
       : 0;
+
+
+  /* =======================================================
+     FASE 5-9E.3 — EXPORT STATISTIK EXCEL
+  ======================================================= */
+
+  function handleExportStatistik() {
+    if (
+      !data ||
+      exportBusy
+    ) {
+      return;
+    }
+
+
+    setExportBusy(
+      true
+    );
+
+
+    setExportMessage(
+      null
+    );
+
+
+    try {
+      const ringkasanRows = [
+        {
+          Statistik:
+            'Total Pendaftar',
+
+          Nilai:
+            angka(
+              ringkasan
+                .pendaftaran_total
+            ),
+        },
+
+        {
+          Statistik:
+            'Pendaftar Tahun Ini',
+
+          Nilai:
+            angka(
+              ringkasan
+                .pendaftaran_tahun_ini
+            ),
+        },
+
+        {
+          Statistik:
+            'Pending',
+
+          Nilai:
+            angka(
+              ringkasan
+                .pendaftaran_pending
+            ),
+        },
+
+        {
+          Statistik:
+            'Diterima',
+
+          Nilai:
+            angka(
+              ringkasan
+                .pendaftaran_diterima
+            ),
+        },
+
+        {
+          Statistik:
+            'Ditolak',
+
+          Nilai:
+            angka(
+              ringkasan
+                .pendaftaran_ditolak
+            ),
+        },
+
+        {
+          Statistik:
+            'Tingkat Diterima',
+
+          Nilai:
+            persen(
+              tingkatDiterima
+            ),
+        },
+
+        {
+          Statistik:
+            'Total Peserta',
+
+          Nilai:
+            angka(
+              ringkasan
+                .peserta_total
+            ),
+        },
+
+        {
+          Statistik:
+            'Peserta Aktif',
+
+          Nilai:
+            angka(
+              ringkasan
+                .peserta_aktif
+            ),
+        },
+
+        {
+          Statistik:
+            'Peserta Selesai',
+
+          Nilai:
+            angka(
+              ringkasan
+                .peserta_selesai
+            ),
+        },
+
+        {
+          Statistik:
+            'Peserta Nonaktif',
+
+          Nilai:
+            angka(
+              ringkasan
+                .peserta_nonaktif
+            ),
+        },
+
+        {
+          Statistik:
+            'Rata-rata Nilai Final',
+
+          Nilai:
+            nilai(
+              ringkasan
+                .rata_nilai_final
+            ),
+        },
+
+        {
+          Statistik:
+            'Total Riwayat Penonaktifan',
+
+          Nilai:
+            angka(
+              ringkasan
+                .penonaktifan_total
+            ),
+        },
+      ];
+
+
+      const divisiRows =
+        divisi.map(
+          (
+            item,
+            index
+          ) => ({
+            No:
+              index +
+              1,
+
+            Divisi:
+              excelSafe(
+                item.divisi
+              ),
+
+            'Total Pendaftar':
+              angka(
+                item.total_pendaftar
+              ),
+
+            Pending:
+              angka(
+                item.pending
+              ),
+
+            Diterima:
+              angka(
+                item.diterima
+              ),
+
+            Ditolak:
+              angka(
+                item.ditolak
+              ),
+
+            'Total Peserta':
+              angka(
+                item.total_peserta ??
+                item.total
+              ),
+
+            'Peserta Aktif':
+              angka(
+                item.peserta_aktif ??
+                item.aktif
+              ),
+
+            'Peserta Selesai':
+              angka(
+                item.peserta_selesai ??
+                item.selesai
+              ),
+
+            'Peserta Nonaktif':
+              angka(
+                item.peserta_nonaktif ??
+                item.nonaktif
+              ),
+          })
+        );
+
+
+      const instansiRows =
+        instansi.map(
+          (
+            item,
+            index
+          ) => ({
+            No:
+              index +
+              1,
+
+            Instansi:
+              excelSafe(
+                item.instansi
+              ),
+
+            'Total Pendaftar':
+              angka(
+                item.total_pendaftar
+              ),
+
+            Pending:
+              angka(
+                item.pending
+              ),
+
+            Diterima:
+              angka(
+                item.diterima
+              ),
+
+            Ditolak:
+              angka(
+                item.ditolak
+              ),
+
+            'Total Peserta':
+              angka(
+                item.total_peserta ??
+                item.peserta
+              ),
+
+            'Peserta Aktif':
+              angka(
+                item.peserta_aktif ??
+                item.aktif
+              ),
+
+            'Peserta Selesai':
+              angka(
+                item.peserta_selesai ??
+                item.selesai
+              ),
+
+            'Peserta Nonaktif':
+              angka(
+                item.peserta_nonaktif ??
+                item.nonaktif
+              ),
+          })
+        );
+
+
+      const jurusanRows =
+        jurusanData.map(
+          (
+            item,
+            index
+          ) => ({
+            No:
+              index +
+              1,
+
+            'Jurusan / Program Studi':
+              excelSafe(
+                item.jurusan
+              ),
+
+            'Total Pendaftar':
+              angka(
+                item.total_pendaftar
+              ),
+
+            Pending:
+              angka(
+                item.pending
+              ),
+
+            Diterima:
+              angka(
+                item.diterima
+              ),
+
+            Ditolak:
+              angka(
+                item.ditolak
+              ),
+
+            'Total Peserta':
+              angka(
+                item.total_peserta ??
+                item.peserta
+              ),
+
+            'Peserta Aktif':
+              angka(
+                item.peserta_aktif ??
+                item.aktif
+              ),
+
+            'Peserta Selesai':
+              angka(
+                item.peserta_selesai ??
+                item.selesai
+              ),
+
+            'Peserta Nonaktif':
+              angka(
+                item.peserta_nonaktif ??
+                item.nonaktif
+              ),
+          })
+        );
+
+
+      const jurusanSummaryRows =
+        Object.entries(
+          jurusanSummary ??
+          {}
+        ).map(
+          (
+            [
+              key,
+              value,
+            ]
+          ) => ({
+            Statistik:
+              key,
+
+            Nilai:
+              typeof value ===
+              'object'
+                ? JSON.stringify(
+                    value
+                  )
+                : excelSafe(
+                    value
+                  ),
+          })
+        );
+
+
+      const bulananRows =
+        bulanan.map(
+          (
+            item,
+            index
+          ) => ({
+            No:
+              index +
+              1,
+
+            Bulan:
+              namaBulanDetail(
+                item.bulan
+              ),
+
+            'Kode Bulan':
+              excelSafe(
+                item.bulan
+              ),
+
+            'Total Pendaftar':
+              angka(
+                item.total_pendaftar
+              ),
+
+            Diterima:
+              angka(
+                item.diterima
+              ),
+
+            Pending:
+              angka(
+                item.pending
+              ),
+
+            Ditolak:
+              angka(
+                item.ditolak
+              ),
+
+            'Peserta Mulai Magang':
+              angka(
+                item.peserta_mulai
+              ),
+
+            Penonaktifan:
+              angka(
+                item.penonaktifan
+              ),
+
+            'Divisi Admin':
+              angka(
+                item.div_admin
+              ),
+
+            'Divisi Sosmed':
+              angka(
+                item.div_sosmed
+              ),
+
+            'Divisi Marketplace':
+              angka(
+                item.div_marketplace
+              ),
+
+            'Divisi Web Developer':
+              angka(
+                item.div_webdev
+              ),
+          })
+        );
+
+
+      const tahunanRows =
+        tahunan.map(
+          (
+            item,
+            index
+          ) => ({
+            No:
+              index +
+              1,
+
+            Tahun:
+              excelSafe(
+                item.tahun
+              ),
+
+            'Total Pendaftar':
+              angka(
+                item.total_pendaftar
+              ),
+
+            Diterima:
+              angka(
+                item.diterima
+              ),
+
+            Pending:
+              angka(
+                item.pending
+              ),
+
+            Ditolak:
+              angka(
+                item.ditolak
+              ),
+
+            'Peserta Mulai':
+              angka(
+                item.peserta_mulai
+              ),
+
+            Penonaktifan:
+              angka(
+                item.penonaktifan
+              ),
+          })
+        );
+
+
+      const penonaktifanRows =
+        penonaktifan.map(
+          (
+            item,
+            index
+          ) => ({
+            No:
+              index +
+              1,
+
+            Alasan:
+              excelSafe(
+                item.alasan
+              ),
+
+            Jumlah:
+              angka(
+                item.jumlah
+              ),
+          })
+        );
+
+
+      const infoRows = [
+        {
+          Keterangan:
+            'Nama Laporan',
+
+          Nilai:
+            'Statistik Administrasi Creativemu Academy',
+        },
+
+        {
+          Keterangan:
+            'Waktu Export',
+
+          Nilai:
+            waktuExportWib(),
+        },
+
+        {
+          Keterangan:
+            'Data Statistik Dibangkitkan',
+
+          Nilai:
+            generatedAt
+              ? tanggalWaktu(
+                  generatedAt
+                )
+              : '-',
+        },
+
+        {
+          Keterangan:
+            'Rentang Bulan',
+
+          Nilai:
+            `${labelFilter(
+              filters
+                .rangeBulan
+            )} bulan`,
+        },
+
+        {
+          Keterangan:
+            'Tahun',
+
+          Nilai:
+            labelFilter(
+              filters.tahun
+            ),
+        },
+
+        {
+          Keterangan:
+            'Bulan',
+
+          Nilai:
+            labelFilter(
+              filters.bulan
+            ),
+        },
+
+        {
+          Keterangan:
+            'Divisi',
+
+          Nilai:
+            labelFilter(
+              filters.divisi
+            ),
+        },
+
+        {
+          Keterangan:
+            'Jurusan / Program Studi',
+
+          Nilai:
+            labelFilter(
+              filters.jurusan
+            ),
+        },
+
+        {
+          Keterangan:
+            'Status Pendaftaran',
+
+          Nilai:
+            labelFilter(
+              filters.status
+            ),
+        },
+
+        {
+          Keterangan:
+            'Status Magang',
+
+          Nilai:
+            labelFilter(
+              filters.statusMagang
+            ),
+        },
+
+        {
+          Keterangan:
+            'Metric Grafik',
+
+          Nilai:
+            labelFilter(
+              metric
+            ),
+        },
+
+        {
+          Keterangan:
+            'Sorting Rekap Bulanan',
+
+          Nilai:
+            `${labelFilter(
+              sortKey
+            )} (${labelFilter(
+              sortDirection
+            )})`,
+        },
+
+        {
+          Keterangan:
+            'Jumlah Global Filter Aktif',
+
+          Nilai:
+            angka(
+              activeFilterCount
+            ),
+        },
+
+        {
+          Keterangan:
+            'Catatan',
+
+          Nilai:
+            'Export menggunakan dataset statistik yang sama dengan Global Filter aktif pada halaman Statistik Administrasi.',
+        },
+      ];
+
+
+      const workbook =
+        XLSX.utils.book_new();
+
+
+      XLSX.utils.book_append_sheet(
+        workbook,
+        buatSheet(
+          ringkasanRows,
+          [
+            34,
+            24,
+          ]
+        ),
+        'Ringkasan'
+      );
+
+
+      XLSX.utils.book_append_sheet(
+        workbook,
+        buatSheet(
+          divisiRows,
+          [
+            6,
+            24,
+            18,
+            14,
+            14,
+            14,
+            18,
+            18,
+            18,
+            20,
+          ]
+        ),
+        'Per Divisi'
+      );
+
+
+      XLSX.utils.book_append_sheet(
+        workbook,
+        buatSheet(
+          instansiRows,
+          [
+            6,
+            45,
+            18,
+            14,
+            14,
+            14,
+            18,
+            18,
+            18,
+            20,
+          ]
+        ),
+        'Per Instansi'
+      );
+
+
+      XLSX.utils.book_append_sheet(
+        workbook,
+        buatSheet(
+          jurusanRows,
+          [
+            6,
+            42,
+            18,
+            14,
+            14,
+            14,
+            18,
+            18,
+            18,
+            20,
+          ]
+        ),
+        'Per Jurusan'
+      );
+
+
+      XLSX.utils.book_append_sheet(
+        workbook,
+        buatSheet(
+          jurusanSummaryRows,
+          [
+            36,
+            60,
+          ]
+        ),
+        'Ringkasan Jurusan'
+      );
+
+
+      XLSX.utils.book_append_sheet(
+        workbook,
+        buatSheet(
+          bulananRows,
+          [
+            6,
+            24,
+            14,
+            18,
+            14,
+            14,
+            14,
+            22,
+            18,
+            16,
+            16,
+            20,
+            24,
+          ]
+        ),
+        'Rekap Bulanan'
+      );
+
+
+      XLSX.utils.book_append_sheet(
+        workbook,
+        buatSheet(
+          tahunanRows,
+          [
+            6,
+            12,
+            18,
+            14,
+            14,
+            14,
+            18,
+            18,
+          ]
+        ),
+        'Rekap Tahunan'
+      );
+
+
+      XLSX.utils.book_append_sheet(
+        workbook,
+        buatSheet(
+          penonaktifanRows,
+          [
+            6,
+            60,
+            14,
+          ]
+        ),
+        'Penonaktifan'
+      );
+
+
+      XLSX.utils.book_append_sheet(
+        workbook,
+        buatSheet(
+          infoRows,
+          [
+            34,
+            88,
+          ]
+        ),
+        'Informasi Export'
+      );
+
+
+      const filename =
+        `Statistik_Creativemu_${filters.rangeBulan}_Bulan_${tanggalNamaFile()}.xlsx`;
+
+
+      XLSX.writeFile(
+        workbook,
+        filename,
+        {
+          compression:
+            true,
+        }
+      );
+
+
+      setExportMessage({
+        tipe:
+          'ok',
+
+        teks:
+          `✅ Statistik berhasil diekspor ke Excel — ${filters.rangeBulan} bulan, ${activeFilterCount} Global Filter aktif.`,
+      });
+
+    } catch (
+      err
+    ) {
+      console.error(
+        'Export statistik gagal:',
+        err
+      );
+
+
+      setExportMessage({
+        tipe:
+          'err',
+
+        teks:
+          err?.message ??
+          'Export statistik gagal.',
+      });
+
+    } finally {
+      setExportBusy(
+        false
+      );
+    }
+  }
 
 
   function globalDetailFilter() {
@@ -877,12 +2004,21 @@ export default function Statistik() {
 
 
     setExplorer({
-      open: true,
+      open:
+        true,
+
       title,
+
       subtitle,
-      rows: [],
-      loading: true,
-      error: null,
+
+      rows:
+        [],
+
+      loading:
+        true,
+
+      error:
+        null,
     });
 
 
@@ -939,11 +2075,17 @@ export default function Statistik() {
           previous
         ) => ({
           ...previous,
+
           rows,
-          loading: false,
-          error: null,
+
+          loading:
+            false,
+
+          error:
+            null,
         })
       );
+
     } catch (
       err
     ) {
@@ -952,8 +2094,13 @@ export default function Statistik() {
           previous
         ) => ({
           ...previous,
-          rows: [],
-          loading: false,
+
+          rows:
+            [],
+
+          loading:
+            false,
+
           error:
             err?.message ??
             'Gagal memuat detail statistik.',
@@ -969,7 +2116,9 @@ export default function Statistik() {
         previous
       ) => ({
         ...previous,
-        open: false,
+
+        open:
+          false,
       })
     );
   }
@@ -1154,9 +2303,13 @@ export default function Statistik() {
   ) {
     return (
       <div>
+
         <div className="skeleton h-8 w-64 rounded-xl" />
+
         <div className="mt-6 skeleton h-52 rounded-3xl" />
+
         <div className="mt-6 skeleton h-96 rounded-3xl" />
+
       </div>
     );
   }
@@ -1166,20 +2319,24 @@ export default function Statistik() {
     <div
       className="transition-[opacity,transform] duration-300 ease-out"
       style={{
-  opacity:
-    pageReady
-      ? 1
-      : 0,
+        opacity:
+          pageReady
+            ? 1
+            : 0,
 
-  transform:
-    pageReady
-      ? 'translate3d(0,0,0)'
-      : 'translate3d(0,8px,0)',
-}}
+        transform:
+          pageReady
+            ? 'translate3d(0,0,0)'
+            : 'translate3d(0,8px,0)',
+      }}
     >
 
+      {/* HEADER */}
+
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+
         <div>
+
           <h1 className="text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">
             Statistik Administrasi
           </h1>
@@ -1197,30 +2354,66 @@ export default function Statistik() {
           <p className="mt-2 inline-flex rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-bold text-indigo-600">
             ✨ Semua statistik mengikuti Global Filter
           </p>
+
         </div>
 
 
-        <button
-          type="button"
-          onClick={
-            muat
-          }
-          disabled={
-            loading
-          }
-          className="group flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-600 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md disabled:opacity-50"
-        >
-          <RefreshCw
-            size={15}
-            className={
-              loading
-                ? 'animate-spin'
-                : 'transition-transform duration-500 group-hover:rotate-180'
-            }
-          />
+        <div className="flex flex-wrap items-center gap-2">
 
-          Refresh
-        </button>
+          <button
+            type="button"
+            onClick={
+              handleExportStatistik
+            }
+            disabled={
+              exportBusy ||
+              loading ||
+              !data
+            }
+            className="btn-press inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-3.5 py-2.5 text-xs font-bold text-white shadow-sm shadow-emerald-500/20 transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+
+            {exportBusy ? (
+              <>
+                <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+
+                Mengekspor…
+              </>
+            ) : (
+              <>
+                📊 Export Statistik
+              </>
+            )}
+
+          </button>
+
+
+          <button
+            type="button"
+            onClick={
+              muat
+            }
+            disabled={
+              loading
+            }
+            className="group flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-600 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md disabled:opacity-50"
+          >
+
+            <RefreshCw
+              size={15}
+              className={
+                loading
+                  ? 'animate-spin'
+                  : 'transition-transform duration-500 group-hover:rotate-180'
+              }
+            />
+
+            Refresh
+
+          </button>
+
+        </div>
+
       </div>
 
 
@@ -1234,11 +2427,26 @@ export default function Statistik() {
       )}
 
 
+      {exportMessage && (
+        <p
+          className={`anim-down mt-3 rounded-xl p-3 text-xs font-semibold ${
+            exportMessage.tipe ===
+            'ok'
+              ? 'bg-green-50 text-green-700'
+              : 'bg-red-50 text-red-600'
+          }`}
+        >
+          {exportMessage.teks}
+        </p>
+      )}
+
+
       <ScrollReveal
         delay={
           80
         }
       >
+
         <GlobalStatisticsFilter
           filters={
             filters
@@ -1262,27 +2470,30 @@ export default function Statistik() {
             loading
           }
         />
+
       </ScrollReveal>
 
 
       {error && (
         <div className="mt-5 flex gap-3 rounded-xl border border-red-200 bg-red-50 p-4">
+
           <AlertTriangle
             size={20}
             className="text-red-600"
           />
 
           <div>
+
             <p className="text-sm font-bold text-red-700">
               Statistik gagal dimuat
             </p>
 
             <p className="mt-1 text-xs text-red-600">
-              {
-                error
-              }
+              {error}
             </p>
+
           </div>
+
         </div>
       )}
 
@@ -1291,9 +2502,14 @@ export default function Statistik() {
         data && (
           <>
 
+            {/* RINGKASAN PENDAFTARAN */}
+
             <ScrollReveal>
+
               <section className="mt-7">
+
                 <div className="flex items-center gap-2">
+
                   <BarChart3
                     size={18}
                     className="text-indigo-600"
@@ -1302,17 +2518,20 @@ export default function Statistik() {
                   <h2 className="font-bold text-slate-800">
                     Ringkasan Pendaftaran
                   </h2>
+
                 </div>
 
 
                 <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+
                   {[
                     {
                       label:
                         'Total Pendaftar',
 
                       value:
-                        ringkasan.pendaftaran_total,
+                        ringkasan
+                          .pendaftaran_total,
 
                       detail:
                         'Sesuai filter aktif',
@@ -1335,7 +2554,8 @@ export default function Statistik() {
                         'Pending',
 
                       value:
-                        ringkasan.pendaftaran_pending,
+                        ringkasan
+                          .pendaftaran_pending,
 
                       detail:
                         'Status Pending',
@@ -1358,7 +2578,8 @@ export default function Statistik() {
                         'Diterima',
 
                       value:
-                        ringkasan.pendaftaran_diterima,
+                        ringkasan
+                          .pendaftaran_diterima,
 
                       detail:
                         `${persen(
@@ -1383,7 +2604,8 @@ export default function Statistik() {
                         'Ditolak',
 
                       value:
-                        ringkasan.pendaftaran_ditolak,
+                        ringkasan
+                          .pendaftaran_ditolak,
 
                       detail:
                         'Status Rejected',
@@ -1405,6 +2627,7 @@ export default function Statistik() {
                       item,
                       index
                     ) => (
+
                       <ScrollReveal
                         key={
                           item.label
@@ -1417,6 +2640,7 @@ export default function Statistik() {
                           16
                         }
                       >
+
                         <KartuRingkasan
                           {...item}
                           onClick={() =>
@@ -1432,17 +2656,26 @@ export default function Statistik() {
                             })
                           }
                         />
+
                       </ScrollReveal>
                     )
                   )}
+
                 </div>
+
               </section>
+
             </ScrollReveal>
 
 
+            {/* PESERTA */}
+
             <ScrollReveal>
+
               <section className="mt-7">
+
                 <div className="flex items-center gap-2">
+
                   <Activity
                     size={18}
                     className="text-indigo-600"
@@ -1451,17 +2684,20 @@ export default function Statistik() {
                   <h2 className="font-bold text-slate-800">
                     Peserta Magang
                   </h2>
+
                 </div>
 
 
                 <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+
                   {[
                     {
                       label:
                         'Total Peserta',
 
                       value:
-                        ringkasan.peserta_total,
+                        ringkasan
+                          .peserta_total,
 
                       detail:
                         'Sesuai filter aktif',
@@ -1481,7 +2717,8 @@ export default function Statistik() {
                         'Aktif',
 
                       value:
-                        ringkasan.peserta_aktif,
+                        ringkasan
+                          .peserta_aktif,
 
                       detail:
                         'Status Active',
@@ -1501,11 +2738,13 @@ export default function Statistik() {
                         'Selesai',
 
                       value:
-                        ringkasan.peserta_selesai,
+                        ringkasan
+                          .peserta_selesai,
 
                       detail:
                         `Rata-rata nilai ${nilai(
-                          ringkasan.rata_nilai_final
+                          ringkasan
+                            .rata_nilai_final
                         )}`,
 
                       Icon:
@@ -1523,11 +2762,13 @@ export default function Statistik() {
                         'Nonaktif',
 
                       value:
-                        ringkasan.peserta_nonaktif,
+                        ringkasan
+                          .peserta_nonaktif,
 
                       detail:
                         `${angka(
-                          ringkasan.penonaktifan_total
+                          ringkasan
+                            .penonaktifan_total
                         )} riwayat penonaktifan`,
 
                       Icon:
@@ -1544,6 +2785,7 @@ export default function Statistik() {
                       item,
                       index
                     ) => (
+
                       <ScrollReveal
                         key={
                           item.label
@@ -1553,6 +2795,7 @@ export default function Statistik() {
                           90
                         }
                       >
+
                         <KartuRingkasan
                           {...item}
                           onClick={() =>
@@ -1568,19 +2811,26 @@ export default function Statistik() {
                             })
                           }
                         />
+
                       </ScrollReveal>
                     )
                   )}
+
                 </div>
+
               </section>
+
             </ScrollReveal>
 
+
+            {/* DIVISI + INSTANSI */}
 
             <ScrollReveal
               distance={
                 34
               }
             >
+
               <DivisionInstitutionAnalytics
                 divisions={
                   divisi
@@ -1609,6 +2859,7 @@ export default function Statistik() {
                   item,
                   selectedMetric
                 ) => {
+
                   const mapping = {
                     pendaftar: [
                       DETAIL_KIND.PENDAFTAR,
@@ -1690,6 +2941,7 @@ export default function Statistik() {
                   item,
                   selectedMetric
                 ) => {
+
                   const mapping = {
                     peserta: [
                       DETAIL_KIND.PESERTA,
@@ -1741,8 +2993,11 @@ export default function Statistik() {
                   });
                 }}
               />
+
             </ScrollReveal>
 
+
+            {/* JURUSAN */}
 
             <JurusanAnalytics
               data={
@@ -1766,12 +3021,16 @@ export default function Statistik() {
             />
 
 
+            {/* GRAFIK BULANAN */}
+
             <ScrollReveal
               distance={
                 36
               }
             >
+
               <div className="mt-8">
+
                 <MonthlyRegistrationChart
                   data={
                     bulanan
@@ -1791,16 +3050,22 @@ export default function Statistik() {
                     bukaBulanDariGrafik
                   }
                 />
+
               </div>
+
             </ScrollReveal>
 
+
+            {/* REKAP BULANAN */}
 
             <ScrollReveal
               distance={
                 36
               }
             >
+
               <div className="mt-6">
+
                 <MonthlyRecapTable
                   data={
                     bulanan
@@ -1841,15 +3106,20 @@ export default function Statistik() {
                     })
                   }
                 />
+
               </div>
+
             </ScrollReveal>
 
+
+            {/* TAHUNAN + PENONAKTIFAN */}
 
             <ScrollReveal
               distance={
                 36
               }
             >
+
               <YearlySuspensionAnalytics
                 yearly={
                   tahunan
@@ -1880,6 +3150,7 @@ export default function Statistik() {
                   item,
                   selectedMetric
                 ) => {
+
                   const mapping = {
                     pendaftar: [
                       DETAIL_KIND.PENDAFTAR,
@@ -1950,21 +3221,9 @@ export default function Statistik() {
                   })
                 }
               />
+
             </ScrollReveal>
 
-
-            <ScrollReveal>
-              <div className="mt-6 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3">
-                <p className="text-xs leading-relaxed text-amber-700">
-                  💡 Statistik masih
-                  menghitung data
-                  dummy/test. Data
-                  tersebut perlu
-                  dibersihkan sebelum
-                  launch resmi.
-                </p>
-              </div>
-            </ScrollReveal>
           </>
         )}
 
@@ -1992,6 +3251,7 @@ export default function Statistik() {
           explorer.error
         }
       />
+
     </div>
   );
 }

@@ -1,1369 +1,1044 @@
-import {
-  useEffect,
-  useState,
-} from 'react';
 
+import { useEffect, useState } from 'react';
 import {
-  Check,
-  Pencil,
-  X,
+  UsersRound, Plus, Pencil, Check, X, UserRound,
+  CalendarDays, ChevronDown, CheckCircle2,
+  AlertCircle, UserPlus, Eye, Sparkles, RotateCcw,
 } from 'lucide-react';
 
-import {
-  supabase,
-} from '../../lib/supabaseClient';
-
-import {
-  fmtTanggal,
-} from '../../lib/format';
-
+import { supabase } from '../../lib/supabaseClient';
+import { fmtTanggal } from '../../lib/format';
 import ConfirmModal from '../../components/ConfirmModal';
 
+const EMPTY_FORM = {
+  nama_kelompok: '',
+  batch_label: '',
+  mentor_id: '',
+};
 
-/* =========================================================
-   TANGGAL WIB
-========================================================= */
+const INPUT =
+  'cm-input h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100';
 
-const HARI_INI =
-  new Intl.DateTimeFormat(
-    'en-CA',
-    {
-      timeZone:
-        'Asia/Jakarta',
+const LABEL =
+  'mb-2 block text-xs font-semibold text-slate-600';
 
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }
-  ).format(
-    new Date()
-  );
+const BUTTON =
+  'cm-button inline-flex items-center justify-center gap-2 rounded-xl font-semibold disabled:cursor-not-allowed disabled:opacity-50';
 
+const MOTION_CSS = `
+@keyframes cmEnter {
+  from { opacity:0; transform:translateY(16px) scale(.985); filter:blur(3px); }
+  to { opacity:1; transform:translateY(0) scale(1); filter:blur(0); }
+}
+@keyframes cmPop {
+  0% { opacity:0; transform:scale(.93); }
+  75% { opacity:1; transform:scale(1.025); }
+  100% { opacity:1; transform:scale(1); }
+}
+@keyframes cmShimmer {
+  from { transform:translateX(-130%); }
+  to { transform:translateX(130%); }
+}
+.cm-enter {
+  animation:cmEnter .48s cubic-bezier(.2,.8,.2,1) both;
+}
+.cm-pop {
+  animation:cmPop .36s cubic-bezier(.2,.8,.2,1) both;
+}
+.cm-card {
+  transition:transform .27s cubic-bezier(.2,.8,.2,1),
+    box-shadow .27s ease,border-color .27s ease;
+}
+.cm-card:hover {
+  transform:translateY(-3px);
+  border-color:rgba(99,102,241,.24);
+  box-shadow:0 18px 42px rgba(15,23,42,.07);
+}
+.cm-card:focus-within {
+  border-color:rgba(99,102,241,.32);
+}
+.cm-button {
+  transition:transform .17s ease,box-shadow .2s ease,
+    background-color .2s ease;
+}
+.cm-button:not(:disabled):hover { transform:translateY(-1px); }
+.cm-button:not(:disabled):active { transform:scale(.97); }
+.cm-input {
+  transition:border-color .2s ease,box-shadow .2s ease;
+}
+.cm-preview {
+  display:grid;
+  grid-template-rows:0fr;
+  opacity:0;
+  transition:grid-template-rows .3s ease,opacity .3s ease;
+}
+.cm-preview.open {
+  grid-template-rows:1fr;
+  opacity:1;
+}
+.cm-preview > div { overflow:hidden; }
+.cm-shimmer { position:relative; overflow:hidden; }
+.cm-shimmer::after {
+  content:'';
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:linear-gradient(110deg,transparent 25%,
+    rgba(255,255,255,.25) 50%,transparent 75%);
+  transform:translateX(-130%);
+}
+.cm-shimmer:hover::after {
+  animation:cmShimmer .8s ease;
+}
+@media(prefers-reduced-motion:reduce) {
+  .cm-enter,.cm-pop,.cm-shimmer::after {
+    animation:none!important;
+  }
+  .cm-card,.cm-button,.cm-input,.cm-preview {
+    transition:none!important;
+  }
+  .cm-card:hover,.cm-button:hover,.cm-button:active {
+    transform:none!important;
+  }
+}
+`;
 
-const sudahMulai =
-  (intern) =>
-    !intern.tanggal_mulai ||
-    intern.tanggal_mulai <=
-      HARI_INI;
+function todayWib() {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jakarta',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+}
 
+function sudahMulai(intern) {
+  return !intern.tanggal_mulai ||
+    intern.tanggal_mulai <= todayWib();
+}
 
-/* =========================================================
-   COMPONENT
-========================================================= */
+function initials(name) {
+  return String(name || '?')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0))
+    .join('')
+    .toUpperCase();
+}
 
 export default function Groups() {
-  /* =======================================================
-     DATA
-  ======================================================= */
+  const [groups, setGroups] = useState([]);
+  const [direktori, setDirektori] = useState([]);
+  const [interns, setInterns] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [sukses, setSukses] = useState(null);
 
-  const [
-    groups,
-    setGroups,
-  ] = useState([]);
+  const [form, setForm] = useState({ ...EMPTY_FORM });
+  const [creating, setCreating] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
-  const [
-    direktori,
-    setDirektori,
-  ] = useState([]);
+  const [pilihIntern, setPilihIntern] = useState({});
+  const [editNama, setEditNama] = useState(null);
+  const [savingNama, setSavingNama] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [busyMentor, setBusyMentor] = useState(null);
 
-  const [
-    interns,
-    setInterns,
-  ] = useState([]);
-
-  const [
-    loading,
-    setLoading,
-  ] = useState(true);
-
-  const [
-    error,
-    setError,
-  ] = useState(null);
-
-  const [
-    sukses,
-    setSukses,
-  ] = useState(null);
-
-
-  /* =======================================================
-     FORM KELOMPOK BARU
-  ======================================================= */
-
-  const [
-    form,
-    setForm,
-  ] = useState({
-    nama_kelompok: '',
-    batch_label: '',
-    mentor_id: '',
-  });
-
-
-  /* =======================================================
-     PILIH INTERN
-  ======================================================= */
-
-  const [
-    pilihIntern,
-    setPilihIntern,
-  ] = useState({});
-
-
-  /* =======================================================
-     EDIT NAMA KELOMPOK
-  ======================================================= */
-
-  const [
-    editNama,
-    setEditNama,
-  ] = useState(null);
-
-  /*
-    Bentuk:
-    {
-      id: UUID,
-      value: 'Nama kelompok'
-    }
-  */
-
-  const [
-    savingNama,
-    setSavingNama,
-  ] = useState(false);
-
-
-  /* =======================================================
-     CONFIRM MODAL
-  ======================================================= */
-
-  const [
-    konfirmasiKeluarkan,
-    setKonfirmasiKeluarkan,
-  ] = useState(null);
-
-  const [
-    konfirmasiMasukkan,
-    setKonfirmasiMasukkan,
-  ] = useState(null);
-
-  const [
-    busy,
-    setBusy,
-  ] = useState(false);
-
-
-  /* =======================================================
-     INITIAL LOAD
-  ======================================================= */
+  const [konfirmasiKeluarkan, setKonfirmasiKeluarkan] =
+    useState(null);
+  const [konfirmasiMasukkan, setKonfirmasiMasukkan] =
+    useState(null);
 
   useEffect(() => {
     muat();
   }, []);
 
-
-  /* =======================================================
-     LOAD DATA
-  ======================================================= */
-
   async function muat() {
     setLoading(true);
 
-    const [
-      {
-        data: g,
-        error: groupError,
-      },
+    try {
+      const [groupResult, directoryResult, internResult] =
+        await Promise.all([
+          supabase
+            .from('groups')
+            .select('*')
+            .order('created_at'),
 
-      {
-        data: dir,
-        error: dirError,
-      },
+          supabase.rpc('get_profile_directory'),
 
-      {
-        data: itn,
-        error: internError,
-      },
-    ] =
-      await Promise.all([
-        supabase
-          .from(
-            'groups'
-          )
-          .select('*')
-          .order(
-            'created_at'
-          ),
+          supabase
+            .from('interns')
+            .select(`
+              id, nama_lengkap, email, group_id,
+              tanggal_mulai, status_magang
+            `)
+            .eq('status_magang', 'Active')
+            .order('nama_lengkap'),
+        ]);
 
-        supabase.rpc(
-          'get_profile_directory'
-        ),
+      const err = groupResult.error ||
+        directoryResult.error ||
+        internResult.error;
 
-        supabase
-          .from(
-            'interns'
-          )
-          .select(
-            `
-            id,
-            nama_lengkap,
-            email,
-            group_id,
-            tanggal_mulai,
-            status_magang
-            `
-          )
-          .eq(
-            'status_magang',
-            'Active'
-          )
-          .order(
-            'nama_lengkap'
-          ),
-      ]);
+      if (err) throw err;
 
-    if (
-      groupError ||
-      dirError ||
-      internError
-    ) {
-      setError(
-        groupError?.message ||
-          dirError?.message ||
-          internError?.message ||
-          'Gagal memuat data kelompok.'
-      );
+      setGroups(groupResult.data ?? []);
+      setDirektori(directoryResult.data ?? []);
+      setInterns(internResult.data ?? []);
+      setError(null);
+    } catch (err) {
+      setError(err.message || 'Gagal memuat data kelompok.');
+    } finally {
+      setLoading(false);
     }
-
-    setGroups(
-      g ?? []
-    );
-
-    setDirektori(
-      dir ?? []
-    );
-
-    setInterns(
-      itn ?? []
-    );
-
-    setLoading(false);
   }
 
+  const mentors = direktori.filter(
+    (profile) => profile.role === 'mentor'
+  );
 
-  /* =======================================================
-     DATA TURUNAN
-  ======================================================= */
+  const tanpaKelompok = interns.filter(
+    (intern) => !intern.group_id
+  );
 
-  const mentors =
-    direktori.filter(
-      (p) =>
-        p.role ===
-        'mentor'
-    );
+  const anggota = (groupId) =>
+    interns.filter((intern) => intern.group_id === groupId);
 
+  const previewMentor = mentors.find(
+    (mentor) => mentor.id === form.mentor_id
+  );
 
-  const anggota =
-    (groupId) =>
-      interns.filter(
-        (intern) =>
-          intern.group_id ===
-          groupId
-      );
+  function setField(field, value) {
+    setForm((previous) => ({
+      ...previous,
+      [field]: value,
+    }));
+  }
 
-
-  const tanpaKelompok =
-    interns.filter(
-      (intern) =>
-        !intern.group_id
-    );
-
-
-  /* =======================================================
-     BUAT KELOMPOK
-  ======================================================= */
-
-  async function buatKelompok(
-    e
-  ) {
+  async function buatKelompok(e) {
     e.preventDefault();
+    if (creating) return;
 
     setError(null);
     setSukses(null);
 
-    const nama =
-      form.nama_kelompok.trim();
+    const nama = form.nama_kelompok.trim();
 
     if (!nama) {
-      setError(
-        'Nama kelompok wajib diisi.'
-      );
-
+      setError('Nama kelompok wajib diisi.');
       return;
     }
 
-    const {
-      error: insertError,
-    } =
-      await supabase
-        .from(
-          'groups'
-        )
+    setCreating(true);
+
+    try {
+      const { error: insertError } = await supabase
+        .from('groups')
         .insert({
-          nama_kelompok:
-            nama,
-
-          batch_label:
-            form.batch_label.trim() ||
-            null,
-
-          mentor_id:
-            form.mentor_id ||
-            null,
+          nama_kelompok: nama,
+          batch_label: form.batch_label.trim() || null,
+          mentor_id: form.mentor_id || null,
         });
 
-    if (insertError) {
-      if (
-        insertError.code ===
-        '23505'
-      ) {
-        setError(
-          'Nama kelompok tersebut sudah digunakan. Gunakan nama lain.'
-        );
+      if (insertError) throw insertError;
 
-        return;
-      }
+      setForm({ ...EMPTY_FORM });
+      setShowPreview(false);
 
+      await muat();
+      setSukses('Kelompok baru berhasil dibuat.');
+    } catch (err) {
       setError(
-        insertError.message
+        err.code === '23505'
+          ? 'Nama kelompok tersebut sudah digunakan.'
+          : err.message || 'Gagal membuat kelompok.'
       );
-
-      return;
+    } finally {
+      setCreating(false);
     }
-
-    setForm({
-      nama_kelompok: '',
-      batch_label: '',
-      mentor_id: '',
-    });
-
-    setSukses(
-      'Kelompok baru berhasil dibuat.'
-    );
-
-    await muat();
   }
 
-
-  /* =======================================================
-     EDIT NAMA KELOMPOK
-  ======================================================= */
-
-  function mulaiEditNama(
-    group
-  ) {
+  function mulaiEditNama(group) {
     setError(null);
     setSukses(null);
-
     setEditNama({
       id: group.id,
-
-      value:
-        group.nama_kelompok ??
-        '',
+      value: group.nama_kelompok ?? '',
     });
   }
 
-
   function batalEditNama() {
-    if (savingNama) {
-      return;
-    }
-
-    setEditNama(null);
+    if (!savingNama) setEditNama(null);
   }
 
-
-  async function simpanNamaKelompok(
-    group
-  ) {
-    if (
-      !editNama ||
-      editNama.id !==
-        group.id
-    ) {
+  async function simpanNamaKelompok(group) {
+    if (!editNama || editNama.id !== group.id || savingNama) {
       return;
     }
 
     setError(null);
     setSukses(null);
 
-    const namaBaru =
-      editNama.value.trim();
+    const namaBaru = editNama.value.trim();
+    const namaLama = (group.nama_kelompok ?? '').trim();
 
-    const namaLama =
-      (
-        group.nama_kelompok ??
-        ''
-      ).trim();
-
-
-    /* Nama tidak boleh kosong */
     if (!namaBaru) {
-      setError(
-        'Nama kelompok tidak boleh kosong.'
-      );
-
+      setError('Nama kelompok tidak boleh kosong.');
       return;
     }
 
-
-    /*
-      Tidak perlu hit DB
-      kalau nama tidak berubah.
-    */
-    if (
-      namaBaru ===
-      namaLama
-    ) {
+    if (namaBaru === namaLama) {
       setEditNama(null);
       return;
     }
 
-
     setSavingNama(true);
 
-    const {
-      error: updateError,
-    } =
-      await supabase
-        .from(
-          'groups'
-        )
-        .update({
-          nama_kelompok:
-            namaBaru,
-        })
-        .eq(
-          'id',
-          group.id
-        );
+    try {
+      const { error: updateError } = await supabase
+        .from('groups')
+        .update({ nama_kelompok: namaBaru })
+        .eq('id', group.id);
 
+      if (updateError) throw updateError;
 
-    if (updateError) {
-      setSavingNama(false);
-
-      /*
-        nama_kelompok memiliki
-        unique constraint.
-      */
-      if (
-        updateError.code ===
-        '23505'
-      ) {
-        setError(
-          `Nama kelompok "${namaBaru}" sudah digunakan oleh kelompok lain.`
-        );
-
-        return;
-      }
-
+      setEditNama(null);
+      await muat();
+      setSukses('Nama kelompok berhasil diperbarui.');
+    } catch (err) {
       setError(
-        updateError.message ||
-          'Nama kelompok gagal diperbarui.'
+        err.code === '23505'
+          ? 'Nama kelompok sudah digunakan kelompok lain.'
+          : err.message || 'Gagal mengubah nama kelompok.'
       );
-
-      return;
+    } finally {
+      setSavingNama(false);
     }
-
-
-    setEditNama(null);
-
-    setSukses(
-      `Nama kelompok berhasil diubah menjadi "${namaBaru}".`
-    );
-
-    await muat();
-
-    setSavingNama(false);
   }
 
-
-  /* =======================================================
-     MASUKKAN PESERTA
-  ======================================================= */
-
-  function mintaMasukkan(
-    groupId,
-    internId
-  ) {
-    if (!internId) {
-      return;
-    }
+  function mintaMasukkan(groupId, internId) {
+    if (!internId || busy) return;
 
     setError(null);
     setSukses(null);
 
-    const target =
-      tanpaKelompok.find(
-        (intern) =>
-          intern.id ===
-          internId
-      );
+    const target = tanpaKelompok.find(
+      (intern) => intern.id === internId
+    );
 
+    if (!target) {
+      setError('Peserta tidak tersedia untuk ditempatkan.');
+      return;
+    }
 
-    if (
-      target &&
-      !sudahMulai(
-        target
-      )
-    ) {
+    if (!sudahMulai(target)) {
       setKonfirmasiMasukkan({
         groupId,
-        intern:
-          target,
+        intern: target,
       });
 
-      setPilihIntern(
-        (state) => ({
-          ...state,
-
-          [groupId]:
-            '',
-        })
-      );
+      setPilihIntern((previous) => ({
+        ...previous,
+        [groupId]: '',
+      }));
 
       return;
     }
 
-
-    eksekusiMasukkan(
-      groupId,
-      internId
-    );
+    eksekusiMasukkan(groupId, internId);
   }
 
-
-  async function eksekusiMasukkan(
-    groupId,
-    internId
-  ) {
-    if (!internId) {
-      return;
-    }
+  async function eksekusiMasukkan(groupId, internId) {
+    if (!internId || busy) return;
 
     setBusy(true);
     setError(null);
     setSukses(null);
 
-    const {
-      error: updateError,
-    } =
-      await supabase
-        .from(
-          'interns'
-        )
-        .update({
-          group_id:
-            groupId,
-        })
-        .eq(
-          'id',
-          internId
+    try {
+      const { data: updated, error: updateError } =
+        await supabase
+          .from('interns')
+          .update({ group_id: groupId })
+          .eq('id', internId)
+          .eq('status_magang', 'Active')
+          .is('group_id', null)
+          .select('id');
+
+      if (updateError) throw updateError;
+
+      if (!updated?.length) {
+        throw new Error(
+          'Peserta sudah ditempatkan atau tidak lagi aktif. Muat ulang halaman.'
         );
+      }
 
+      setPilihIntern((previous) => ({
+        ...previous,
+        [groupId]: '',
+      }));
 
-    if (updateError) {
-      setError(
-        updateError.message
-      );
-    } else {
-      setSukses(
-        'Peserta berhasil dimasukkan ke kelompok.'
-      );
+      await muat();
+      setSukses('Peserta berhasil dimasukkan ke kelompok.');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
     }
-
-
-    setPilihIntern(
-      (state) => ({
-        ...state,
-
-        [groupId]:
-          '',
-      })
-    );
-
-    await muat();
-
-    setBusy(false);
   }
-
-
-  /* =======================================================
-     KELUARKAN PESERTA
-  ======================================================= */
 
   async function eksekusiKeluarkan() {
-    if (
-      !konfirmasiKeluarkan
-    ) {
-      return;
-    }
+    if (!konfirmasiKeluarkan || busy) return;
 
     setBusy(true);
     setError(null);
     setSukses(null);
 
-    const {
-      error: updateError,
-    } =
-      await supabase
-        .from(
-          'interns'
-        )
-        .update({
-          group_id:
-            null,
-        })
-        .eq(
-          'id',
-          konfirmasiKeluarkan.id
-        );
+    const target = konfirmasiKeluarkan;
 
+    try {
+      const { error: updateError } = await supabase
+        .from('interns')
+        .update({ group_id: null })
+        .eq('id', target.id);
 
-    if (updateError) {
-      setError(
-        updateError.message
-      );
-    } else {
+      if (updateError) throw updateError;
+
+      setKonfirmasiKeluarkan(null);
+      await muat();
+
       setSukses(
-        `${konfirmasiKeluarkan.nama_lengkap} berhasil dikeluarkan dari kelompok.`
+        `${target.nama_lengkap} berhasil dikeluarkan dari kelompok.`
       );
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
     }
-
-
-    setKonfirmasiKeluarkan(
-      null
-    );
-
-    await muat();
-
-    setBusy(false);
   }
 
+  async function gantiMentor(groupId, mentorId) {
+    if (busyMentor) return;
 
-  /* =======================================================
-     GANTI MENTOR
-  ======================================================= */
-
-  async function gantiMentor(
-    groupId,
-    mentorId
-  ) {
+    setBusyMentor(groupId);
     setError(null);
     setSukses(null);
 
-    const {
-      error: updateError,
-    } =
-      await supabase
-        .from(
-          'groups'
-        )
-        .update({
-          mentor_id:
-            mentorId ||
-            null,
-        })
-        .eq(
-          'id',
-          groupId
-        );
+    try {
+      const { error: updateError } = await supabase
+        .from('groups')
+        .update({ mentor_id: mentorId || null })
+        .eq('id', groupId);
 
+      if (updateError) throw updateError;
 
-    if (updateError) {
-      setError(
-        updateError.message
-      );
-
-      return;
+      await muat();
+      setSukses('Pembimbing kelompok berhasil diperbarui.');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusyMentor(null);
     }
-
-
-    setSukses(
-      'Pembimbing kelompok berhasil diperbarui.'
-    );
-
-    await muat();
   }
-
-
-  /* =======================================================
-     LOADING
-  ======================================================= */
-
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-3 py-16">
-        <span className="inline-block h-8 w-8 animate-spin rounded-full border-[3px] border-slate-200 border-t-indigo-600" />
-
-        <p className="text-sm text-slate-400">
-          Memuat data...
-        </p>
-      </div>
-    );
-  }
-
-
-  /* =======================================================
-     UI
-  ======================================================= */
 
   return (
-    <div>
+    <div className="space-y-7 pb-8">
+      <style>{MOTION_CSS}</style>
+
       {/* HEADER */}
 
-      <div className="anim-up">
-        <h1 className="text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">
+      <header className="cm-enter">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
           Kelompok Magang
         </h1>
 
         <p className="mt-1 text-sm text-slate-500">
-          Kelola kelompok,
-          pembimbing, nama
-          kelompok, serta
-          penempatan peserta
-          magang.
+          Atur kelompok, pembimbing, dan penempatan peserta magang.
         </p>
-      </div>
+      </header>
 
-
-      {/* ERROR */}
+      {/* NOTIFICATIONS */}
 
       {error && (
-        <div className="anim-down mt-4 flex items-start justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-3">
-          <p className="text-sm font-medium text-red-600">
-            ⚠️ {error}
-          </p>
+        <div
+          role="alert"
+          className="cm-pop flex items-start justify-between gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+        >
+          <span className="flex items-center gap-2">
+            <AlertCircle size={17} className="shrink-0" />
+            {error}
+          </span>
 
           <button
             type="button"
-            onClick={() =>
-              setError(null)
-            }
-            className="shrink-0 text-red-400 transition hover:text-red-600"
+            onClick={() => setError(null)}
+            aria-label="Tutup pesan error"
+            className="cm-button"
           >
-            ✕
+            <X size={17} />
           </button>
         </div>
       )}
-
-
-      {/* SUCCESS */}
 
       {sukses && (
-        <div className="anim-down mt-4 flex items-start justify-between gap-3 rounded-xl border border-green-200 bg-green-50 p-3">
-          <p className="text-sm font-medium text-green-700">
-            ✅ {sukses}
-          </p>
+        <div
+          role="status"
+          className="cm-pop flex items-start justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+        >
+          <span className="flex items-center gap-2">
+            <CheckCircle2 size={17} className="shrink-0" />
+            {sukses}
+          </span>
 
           <button
             type="button"
-            onClick={() =>
-              setSukses(null)
-            }
-            className="shrink-0 text-green-500 transition hover:text-green-700"
+            onClick={() => setSukses(null)}
+            aria-label="Tutup pesan sukses"
+            className="cm-button"
           >
-            ✕
+            <X size={17} />
           </button>
         </div>
       )}
 
-
-      {/* =================================================
-          BUAT KELOMPOK BARU
-      ================================================= */}
+      {/* CREATE GROUP */}
 
       <form
-        onSubmit={
-          buatKelompok
-        }
-        className="anim-up mt-5 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm [animation-delay:80ms]"
+        onSubmit={buatKelompok}
+        className="cm-enter cm-card overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm"
+        style={{ animationDelay: '80ms' }}
       >
-        <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
-          Buat Kelompok Baru
-        </p>
+        <div className="flex flex-col gap-4 border-b border-slate-100 px-6 py-6 sm:flex-row sm:items-center">
 
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <input
-            required
-            placeholder="Nama kelompok *"
-            value={
-              form.nama_kelompok
-            }
-            onChange={(e) =>
-              setForm(
-                (state) => ({
-                  ...state,
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
+            <UsersRound size={24} strokeWidth={1.8} />
+          </div>
 
-                  nama_kelompok:
-                    e.target.value,
-                })
-              )
-            }
-            className="rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-medium outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
-          />
+          <div className="flex-1">
+            <h2 className="text-[17px] font-semibold tracking-tight text-slate-900">
+              Buat kelompok baru
+            </h2>
 
-          <input
-            placeholder="Batch (opsional)"
-            value={
-              form.batch_label
-            }
-            onChange={(e) =>
-              setForm(
-                (state) => ({
-                  ...state,
-
-                  batch_label:
-                    e.target.value,
-                })
-              )
-            }
-            className="rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-medium outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
-          />
-
-          <select
-            value={
-              form.mentor_id
-            }
-            onChange={(e) =>
-              setForm(
-                (state) => ({
-                  ...state,
-
-                  mentor_id:
-                    e.target.value,
-                })
-              )
-            }
-            className="rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
-          >
-            <option value="">
-              Pilih pembimbing…
-              (opsional)
-            </option>
-
-            {mentors.map(
-              (mentor) => (
-                <option
-                  key={
-                    mentor.id
-                  }
-                  value={
-                    mentor.id
-                  }
-                >
-                  {
-                    mentor.nama_lengkap
-                  }
-                </option>
-              )
-            )}
-          </select>
-        </div>
-
-        <button
-          type="submit"
-          className="btn-press mt-4 w-full rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-500/30 transition hover:from-indigo-700 hover:to-purple-700 sm:w-auto"
-        >
-          Buat Kelompok
-        </button>
-      </form>
-
-
-      {/* =================================================
-          DAFTAR KELOMPOK
-      ================================================= */}
-
-      <h2 className="anim-up mt-8 text-base font-bold text-slate-800 [animation-delay:160ms]">
-        👥 Daftar Kelompok (
-        {groups.length})
-      </h2>
-
-
-      <div className="mt-3 space-y-4">
-        {groups.length ===
-        0 ? (
-          <div className="anim-up flex flex-col items-center rounded-2xl border-2 border-dashed border-slate-300 bg-white p-10 text-center">
-            <p className="anim-float text-5xl">
-              👥
-            </p>
-
-            <p className="mt-4 font-bold text-slate-600">
-              Belum Ada
-              Kelompok
-            </p>
-
-            <p className="mt-1 text-sm text-slate-400">
-              Buat kelompok
-              pertama lewat form
-              di atas
+            <p className="mt-1 text-[13px] leading-5 text-slate-500">
+              Lengkapi informasi dasar untuk membentuk kelompok magang.
             </p>
           </div>
-        ) : (
-          groups.map(
-            (
-              group,
-              index
-            ) => {
-              const daftarAnggota =
-                anggota(
-                  group.id
-                );
 
-              const belumMulaiCount =
-                daftarAnggota.filter(
-                  (intern) =>
-                    !sudahMulai(
-                      intern
-                    )
-                ).length;
+          <span className="w-fit rounded-full bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-500">
+            {groups.length} kelompok terdaftar
+          </span>
+        </div>
 
-              const sedangEdit =
-                editNama?.id ===
-                group.id;
+        <div className="px-6 py-6">
 
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+
+            <div>
+              <label htmlFor="group-name" className={LABEL}>
+                Nama kelompok <span className="text-red-500">*</span>
+              </label>
+
+              <input
+                id="group-name"
+                type="text"
+                required
+                maxLength={150}
+                placeholder="Contoh: Tim Pengembangan Web"
+                value={form.nama_kelompok}
+                onChange={(e) =>
+                  setField('nama_kelompok', e.target.value)
+                }
+                className={INPUT}
+              />
+
+              <p className="mt-2 text-[11px] text-slate-400">
+                Gunakan nama yang mudah dikenali.
+              </p>
+            </div>
+
+            <div>
+              <label htmlFor="group-batch" className={LABEL}>
+                Batch <span className="font-normal text-slate-400">(opsional)</span>
+              </label>
+
+              <div className="relative">
+                <CalendarDays
+                  size={17}
+                  className="pointer-events-none absolute left-4 top-3.5 text-slate-400"
+                />
+
+                <input
+                  id="group-batch"
+                  type="text"
+                  maxLength={100}
+                  placeholder="Contoh: Batch Oktober 2026"
+                  value={form.batch_label}
+                  onChange={(e) =>
+                    setField('batch_label', e.target.value)
+                  }
+                  className={`${INPUT} pl-11`}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="group-mentor" className={LABEL}>
+                Pembimbing <span className="font-normal text-slate-400">(opsional)</span>
+              </label>
+
+              <div className="relative">
+                <UserRound
+                  size={17}
+                  className="pointer-events-none absolute left-4 top-3.5 text-slate-400"
+                />
+
+                <select
+                  id="group-mentor"
+                  value={form.mentor_id}
+                  onChange={(e) =>
+                    setField('mentor_id', e.target.value)
+                  }
+                  className={`${INPUT} appearance-none pl-11 pr-11`}
+                >
+                  <option value="">Belum menentukan pembimbing</option>
+
+                  {mentors.map((mentor) => (
+                    <option key={mentor.id} value={mentor.id}>
+                      {mentor.nama_lengkap}
+                    </option>
+                  ))}
+                </select>
+
+                <ChevronDown
+                  size={17}
+                  className="pointer-events-none absolute right-4 top-3.5 text-slate-400"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* LIVE PREVIEW */}
+
+          <div className="mt-6 rounded-2xl border border-slate-200 bg-[#F8F9FC]">
+
+            <button
+              type="button"
+              onClick={() => setShowPreview((value) => !value)}
+              aria-expanded={showPreview}
+              aria-controls="group-preview-panel"
+              className="cm-button flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600">
+                  <Eye size={17} />
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold text-slate-800">
+                    Pratinjau kelompok
+                  </p>
+
+                  <p className="text-[11px] text-slate-400">
+                    Periksa informasi sebelum disimpan
+                  </p>
+                </div>
+              </div>
+
+              <ChevronDown
+                size={17}
+                className={`text-slate-400 transition-transform duration-300 ${
+                  showPreview ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
+
+            <div
+              id="group-preview-panel"
+              className={`cm-preview ${showPreview ? 'open' : ''}`}
+              aria-hidden={!showPreview}
+            >
+              <div>
+                <div className="border-t border-slate-200 px-4 py-4">
+                  <div className="cm-pop rounded-2xl border border-slate-200 bg-white p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                        <UsersRound size={20} />
+                      </div>
+
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-900">
+                          {form.nama_kelompok.trim() ||
+                            'Nama kelompok belum diisi'}
+                        </h3>
+
+                        <p className="mt-1 text-xs text-slate-500">
+                          {form.batch_label.trim() || 'Tanpa batch'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 flex items-center gap-2 border-t border-slate-100 pt-3 text-xs text-slate-500">
+                      <UserRound size={15} />
+                      {previewMentor?.nama_lengkap ||
+                        'Pembimbing belum ditentukan'}
+                    </div>
+                  </div>
+
+                  <p className="mt-2 text-[11px] text-slate-400">
+                    Pratinjau belum menyimpan data ke database.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        {/* FORM ACTIONS */}
+
+        <div className="flex flex-col gap-3 border-t border-slate-100 bg-[#FAFAFC] px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+
+          <p className="flex items-center gap-1.5 text-xs text-slate-500">
+            <Sparkles size={14} className="text-indigo-500" />
+            Pembimbing dapat diubah kapan saja.
+          </p>
+
+          <div className="flex gap-2">
+
+            <button
+              type="button"
+              disabled={creating}
+              onClick={() => {
+                setForm({ ...EMPTY_FORM });
+                setShowPreview(false);
+              }}
+              className={`${BUTTON} h-11 border border-slate-200 bg-white px-4 text-sm text-slate-600 hover:bg-slate-50`}
+            >
+              <RotateCcw size={15} />
+              Reset
+            </button>
+
+            <button
+              type="submit"
+              disabled={creating || !form.nama_kelompok.trim()}
+              className={`${BUTTON} cm-shimmer h-11 bg-indigo-600 px-5 text-sm text-white shadow-sm hover:bg-indigo-700 hover:shadow-indigo-200`}
+            >
+              {creating ? (
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+              ) : (
+                <Plus size={17} />
+              )}
+
+              {creating ? 'Menyimpan...' : 'Buat Kelompok'}
+            </button>
+          </div>
+
+        </div>
+      </form>
+
+      {/* GROUP LIST */}
+
+      <div
+        className="cm-enter flex flex-wrap items-center justify-between gap-3"
+        style={{ animationDelay: '130ms' }}
+      >
+        <div>
+          <h2 className="text-[17px] font-semibold text-slate-900">
+            Daftar Kelompok
+            <span className="ml-2 rounded-full bg-slate-200/70 px-2.5 py-1 text-xs text-slate-600">
+              {groups.length}
+            </span>
+          </h2>
+
+          <p className="mt-1 text-xs text-slate-500">
+            Kelola pembimbing dan anggota setiap kelompok.
+          </p>
+        </div>
+
+        <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-500">
+          {tanpaKelompok.length} peserta belum ditempatkan
+        </span>
+      </div>
+
+      {loading ? (
+        <div className="space-y-3">
+          <div className="skeleton h-40 rounded-3xl" />
+          <div className="skeleton h-40 rounded-3xl" />
+        </div>
+      ) : (
+        <div className="space-y-3">
+
+          {groups.length === 0 ? (
+            <div className="cm-enter rounded-[22px] border border-dashed border-slate-300 bg-white px-6 py-14 text-center">
+              <UsersRound
+                size={30}
+                className="mx-auto text-slate-300"
+              />
+
+              <p className="mt-3 font-semibold text-slate-700">
+                Belum ada kelompok
+              </p>
+
+              <p className="mt-1 text-sm text-slate-400">
+                Gunakan formulir di atas untuk membuat kelompok pertama.
+              </p>
+            </div>
+          ) : (
+            groups.map((group, index) => {
+              const daftarAnggota = anggota(group.id);
+
+              const belumMulaiCount = daftarAnggota.filter(
+                (intern) => !sudahMulai(intern)
+              ).length;
+
+              const sedangEdit = editNama?.id === group.id;
 
               return (
-                <div
-                  key={
-                    group.id
-                  }
-                  className="anim-up card-hover relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm"
+                <article
+                  key={group.id}
+                  className="cm-enter cm-card rounded-[22px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
                   style={{
-                    animationDelay: `${200 + index * 90}ms`,
+                    animationDelay: `${Math.min(index * 65, 400)}ms`,
                   }}
                 >
-                  {/* ACCENT */}
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
 
-                  <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-indigo-500 to-purple-500" />
+                    <div className="flex min-w-0 flex-1 items-start gap-3">
 
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                        <UsersRound size={20} />
+                      </div>
 
-                  {/* HEADER KELOMPOK */}
+                      <div className="min-w-0 flex-1">
 
-                  <div className="flex flex-col gap-4 pl-3 sm:flex-row sm:items-start sm:justify-between">
-
-                    <div className="min-w-0 flex-1">
-
-                      {/* ============================
-                          EDIT NAMA
-                      ============================ */}
-
-                      {sedangEdit ? (
-                        <div className="flex max-w-xl flex-col gap-2 sm:flex-row sm:items-center">
-                          <input
-                            autoFocus
-                            value={
-                              editNama.value
-                            }
-                            disabled={
-                              savingNama
-                            }
-                            onChange={(e) =>
-                              setEditNama(
-                                (
-                                  state
-                                ) => ({
-                                  ...state,
-
-                                  value:
-                                    e.target.value,
-                                })
-                              )
-                            }
-                            onKeyDown={(e) => {
-                              if (
-                                e.key ===
-                                'Enter'
-                              ) {
-                                e.preventDefault();
-
-                                simpanNamaKelompok(
-                                  group
-                                );
+                        {sedangEdit ? (
+                          <div className="flex flex-wrap gap-2">
+                            <input
+                              autoFocus
+                              value={editNama.value}
+                              disabled={savingNama}
+                              onChange={(e) =>
+                                setEditNama((previous) => ({
+                                  ...previous,
+                                  value: e.target.value,
+                                }))
                               }
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  simpanNamaKelompok(group);
+                                }
 
-                              if (
-                                e.key ===
-                                'Escape'
-                              ) {
-                                batalEditNama();
-                              }
-                            }}
-                            className="h-10 min-w-0 flex-1 rounded-xl border border-indigo-300 bg-indigo-50/40 px-3 text-sm font-bold text-slate-800 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 disabled:opacity-60"
-                          />
+                                if (e.key === 'Escape') {
+                                  batalEditNama();
+                                }
+                              }}
+                              className={`${INPUT} max-w-sm flex-1`}
+                            />
 
-                          <div className="flex gap-2">
                             <button
                               type="button"
-                              disabled={
-                                savingNama
-                              }
-                              onClick={() =>
-                                simpanNamaKelompok(
-                                  group
-                                )
-                              }
-                              title="Simpan nama kelompok"
-                              className="btn-press flex h-10 items-center justify-center gap-1.5 rounded-xl bg-indigo-600 px-3 text-xs font-bold text-white shadow-md shadow-indigo-500/20 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                              disabled={savingNama}
+                              onClick={() => simpanNamaKelompok(group)}
+                              className={`${BUTTON} h-10 bg-indigo-600 px-3 text-xs text-white`}
                             >
                               {savingNama ? (
-                                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
                               ) : (
-                                <Check
-                                  size={
-                                    15
-                                  }
-                                />
+                                <Check size={15} />
                               )}
-
                               Simpan
                             </button>
 
                             <button
                               type="button"
-                              disabled={
-                                savingNama
-                              }
-                              onClick={
-                                batalEditNama
-                              }
-                              title="Batal"
-                              className="btn-press flex h-10 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-500 transition hover:bg-slate-50 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                              disabled={savingNama}
+                              onClick={batalEditNama}
+                              className={`${BUTTON} h-10 border border-slate-200 px-3 text-xs text-slate-600`}
                             >
-                              <X
-                                size={
-                                  15
-                                }
-                              />
-
+                              <X size={15} />
                               Batal
                             </button>
                           </div>
-                        </div>
-                      ) : (
-                        <div className="flex min-w-0 flex-wrap items-center gap-2">
-                          <h3 className="truncate text-base font-extrabold text-slate-800">
-                            {
-                              group.nama_kelompok
-                            }
-                          </h3>
+                        ) : (
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="text-base font-semibold text-slate-900">
+                              {group.nama_kelompok}
+                            </h3>
 
-                          {/* EDIT BUTTON */}
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              mulaiEditNama(
-                                group
-                              )
-                            }
-                            className="btn-press inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] font-bold text-slate-500 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600"
-                            title="Edit nama kelompok"
-                          >
-                            <Pencil
-                              size={
-                                13
-                              }
-                            />
-
-                            Edit Nama
-                          </button>
-                        </div>
-                      )}
-
-
-                      {/* BATCH + MENTOR */}
-
-                      <div className="mt-1.5 flex flex-col gap-2 text-[11px] font-medium text-slate-400 sm:flex-row sm:flex-wrap sm:items-center">
-                        <span>
-                          {group.batch_label ??
-                            'tanpa batch'}
-                        </span>
-
-                        <span className="hidden sm:inline">
-                          ·
-                        </span>
-
-                        <select
-                          value={
-                            group.mentor_id ??
-                            ''
-                          }
-                          onChange={(e) =>
-                            gantiMentor(
-                              group.id,
-                              e.target.value
-                            )
-                          }
-                          className="w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-[11px] font-bold text-slate-700 outline-none transition focus:border-indigo-500 sm:w-auto"
-                        >
-                          <option value="">
-                            — pilih
-                            pembimbing —
-                          </option>
-
-                          {mentors.map(
-                            (
-                              mentor
-                            ) => (
-                              <option
-                                key={
-                                  mentor.id
-                                }
-                                value={
-                                  mentor.id
-                                }
-                              >
-                                🧑‍🏫{' '}
-                                {
-                                  mentor.nama_lengkap
-                                }
-                              </option>
-                            )
-                          )}
-                        </select>
-                      </div>
-                    </div>
-
-
-                    {/* COUNT */}
-
-                    <div className="flex shrink-0 flex-row gap-2 sm:flex-col sm:items-end sm:gap-1">
-                      <span className="rounded-full bg-indigo-50 px-3 py-1 text-[11px] font-bold text-indigo-600">
-                        {
-                          daftarAnggota.length
-                        }{' '}
-                        anggota
-                      </span>
-
-                      {belumMulaiCount >
-                        0 && (
-                        <span className="anim-pop rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-bold text-amber-600">
-                          ⏳{' '}
-                          {
-                            belumMulaiCount
-                          }{' '}
-                          belum mulai
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-
-                  {/* =================================================
-                      ANGGOTA
-                  ================================================= */}
-
-                  <div className="mt-4 flex flex-wrap gap-2 pl-3">
-                    {daftarAnggota.length ===
-                    0 ? (
-                      <p className="text-xs italic text-slate-300">
-                        Belum ada
-                        anggota…
-                      </p>
-                    ) : (
-                      daftarAnggota.map(
-                        (
-                          anggotaItem,
-                          anggotaIndex
-                        ) => (
-                          <span
-                            key={
-                              anggotaItem.id
-                            }
-                            className={`anim-pop group inline-flex items-center gap-1.5 rounded-full border py-1 pl-1 pr-3 text-xs font-bold ${
-                              sudahMulai(
-                                anggotaItem
-                              )
-                                ? 'border-slate-100 bg-slate-50 text-slate-700'
-                                : 'border-amber-200 bg-amber-50 text-amber-600'
-                            }`}
-                            style={{
-                              animationDelay: `${250 + index * 90 + anggotaIndex * 60}ms`,
-                            }}
-                          >
-                            <span
-                              className={`flex h-6 w-6 items-center justify-center rounded-full text-[9px] font-extrabold text-white ${
-                                sudahMulai(
-                                  anggotaItem
-                                )
-                                  ? 'bg-indigo-600'
-                                  : 'bg-amber-400'
-                              }`}
-                            >
-                              {anggotaItem.nama_lengkap
-                                ?.split(
-                                  ' '
-                                )
-                                .map(
-                                  (
-                                    kata
-                                  ) =>
-                                    kata[0]
-                                )
-                                .slice(
-                                  0,
-                                  2
-                                )
-                                .join(
-                                  ''
-                                )}
-                            </span>
-
-                            {
-                              anggotaItem.nama_lengkap
-                            }
-
-                            {!sudahMulai(
-                              anggotaItem
-                            ) &&
-                              ' ⏳'}
+                            {group.batch_label && (
+                              <span className="rounded-lg bg-indigo-50 px-2.5 py-1 text-[11px] text-indigo-600">
+                                {group.batch_label}
+                              </span>
+                            )}
 
                             <button
                               type="button"
-                              onClick={() =>
-                                setKonfirmasiKeluarkan(
-                                  anggotaItem
-                                )
-                              }
-                              title="Keluarkan dari kelompok"
-                              className="ml-0.5 text-slate-300 transition hover:text-red-500"
+                              onClick={() => mulaiEditNama(group)}
+                              title="Edit nama kelompok"
+                              className="cm-button rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-indigo-600"
                             >
-                              ✕
+                              <Pencil size={15} />
                             </button>
-                          </span>
-                        )
-                      )
-                    )}
+                          </div>
+                        )}
+
+                        <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                          <span>{daftarAnggota.length} anggota</span>
+
+                          {belumMulaiCount > 0 && (
+                            <span className="text-amber-600">
+                              {belumMulaiCount} belum mulai
+                            </span>
+                          )}
+                        </div>
+
+                      </div>
+                    </div>
+
+                    {/* MENTOR */}
+
+                    <div className="w-full lg:w-[260px]">
+                      <label className="mb-1.5 block text-[11px] text-slate-500">
+                        Pembimbing
+                      </label>
+
+                      <select
+                        value={group.mentor_id ?? ''}
+                        disabled={busyMentor === group.id}
+                        onChange={(e) =>
+                          gantiMentor(group.id, e.target.value)
+                        }
+                        className={`${INPUT} h-10 text-xs disabled:opacity-50`}
+                      >
+                        <option value="">Belum ada pembimbing</option>
+
+                        {mentors.map((mentor) => (
+                          <option key={mentor.id} value={mentor.id}>
+                            {mentor.nama_lengkap}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
                   </div>
 
+                  {/* MEMBERS */}
 
-                  {/* =================================================
-                      TAMBAH ANGGOTA
-                  ================================================= */}
+                  <div className="mt-5 border-t border-slate-100 pt-4">
 
-                  {tanpaKelompok.length >
-                    0 && (
-                    <div className="mt-4 flex flex-col gap-2 pl-3 sm:flex-row">
-                      <select
-                        value={
-                          pilihIntern[
-                            group.id
-                          ] ??
-                          ''
-                        }
-                        onChange={(e) =>
-                          setPilihIntern(
-                            (
-                              state
-                            ) => ({
-                              ...state,
+                    <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                      Anggota
+                    </p>
 
-                              [group.id]:
-                                e.target.value,
-                            })
-                          )
-                        }
-                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-medium outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
-                      >
-                        <option value="">
-                          + Masukkan
-                          peserta ke
-                          kelompok ini…
-                        </option>
+                    <div className="flex flex-wrap gap-2">
 
-                        {tanpaKelompok.map(
-                          (
-                            intern
-                          ) => (
-                            <option
-                              key={
-                                intern.id
-                              }
-                              value={
-                                intern.id
-                              }
+                      {daftarAnggota.length === 0 ? (
+                        <p className="text-xs text-slate-400">
+                          Belum ada anggota dalam kelompok ini.
+                        </p>
+                      ) : (
+                        daftarAnggota.map((intern) => (
+                          <div
+                            key={intern.id}
+                            className={`cm-pop inline-flex max-w-full items-center gap-2 rounded-full border px-1.5 py-1 pr-2 ${
+                              sudahMulai(intern)
+                                ? 'border-slate-200 bg-white'
+                                : 'border-amber-200 bg-amber-50'
+                            }`}
+                          >
+                            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100 text-[10px] font-bold text-indigo-700">
+                              {initials(intern.nama_lengkap)}
+                            </span>
+
+                            <span className="max-w-[180px] truncate text-xs font-medium text-slate-700">
+                              {intern.nama_lengkap}
+                              {!sudahMulai(intern) && ' ⏳'}
+                            </span>
+
+                            <button
+                              type="button"
+                              disabled={busy}
+                              title="Keluarkan peserta"
+                              aria-label={`Keluarkan ${intern.nama_lengkap}`}
+                              onClick={() => setKonfirmasiKeluarkan(intern)}
+                              className="cm-button rounded-full p-1 text-slate-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
                             >
-                              {
-                                intern.nama_lengkap
-                              }{' '}
-                              —{' '}
-                              {
-                                intern.email
-                              }
+                              <X size={13} />
+                            </button>
+                          </div>
+                        ))
+                      )}
 
-                              {!sudahMulai(
-                                intern
-                              )
-                                ? ' (belum mulai)'
-                                : ''}
+                    </div>
+                  </div>
+
+                  {/* ADD MEMBER */}
+
+                  {tanpaKelompok.length > 0 && (
+                    <div className="mt-4 flex flex-col gap-2 rounded-2xl bg-[#F8F9FC] p-3 sm:flex-row sm:items-center">
+
+                      <div className="flex flex-1 items-center gap-2">
+                        <UserPlus size={17} className="shrink-0 text-slate-400" />
+
+                        <select
+                          value={pilihIntern[group.id] ?? ''}
+                          onChange={(e) =>
+                            setPilihIntern((previous) => ({
+                              ...previous,
+                              [group.id]: e.target.value,
+                            }))
+                          }
+                          className={`${INPUT} h-10 min-w-0 flex-1 text-xs`}
+                        >
+                          <option value="">
+                            Pilih peserta untuk ditambahkan
+                          </option>
+
+                          {tanpaKelompok.map((intern) => (
+                            <option key={intern.id} value={intern.id}>
+                              {intern.nama_lengkap} — {intern.email}
+                              {!sudahMulai(intern) ? ' (belum mulai)' : ''}
                             </option>
-                          )
-                        )}
-                      </select>
+                          ))}
+                        </select>
+                      </div>
 
                       <button
                         type="button"
-                        disabled={
-                          busy ||
-                          !pilihIntern[
-                            group.id
-                          ]
-                        }
+                        disabled={busy || !pilihIntern[group.id]}
                         onClick={() =>
-                          mintaMasukkan(
-                            group.id,
-
-                            pilihIntern[
-                              group.id
-                            ]
-                          )
+                          mintaMasukkan(group.id, pilihIntern[group.id])
                         }
-                        className="btn-press w-full shrink-0 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-indigo-500/25 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                        className={`${BUTTON} h-10 bg-indigo-600 px-4 text-xs text-white hover:bg-indigo-700`}
                       >
-                        Masukkan
+                        {busy ? (
+                          <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                        ) : (
+                          <Plus size={15} />
+                        )}
+                        Tambah Anggota
                       </button>
+
                     </div>
                   )}
-                </div>
+
+                </article>
               );
-            }
-          )
-        )}
-      </div>
+            })
+          )}
 
+        </div>
+      )}
 
-      {/* =================================================
-          CONFIRM KELUARKAN
-      ================================================= */}
+      {/* CONFIRM REMOVE */}
 
       <ConfirmModal
-        open={
-          !!konfirmasiKeluarkan
-        }
-        onClose={() =>
-          setKonfirmasiKeluarkan(
-            null
-          )
-        }
-        onConfirm={
-          eksekusiKeluarkan
-        }
-        busy={
-          busy
-        }
+        open={!!konfirmasiKeluarkan}
+        onClose={() => setKonfirmasiKeluarkan(null)}
+        onConfirm={eksekusiKeluarkan}
+        busy={busy}
         judul={
           konfirmasiKeluarkan
             ? `Keluarkan "${konfirmasiKeluarkan.nama_lengkap}"?`
@@ -1374,45 +1049,21 @@ export default function Groups() {
         tipe="warn"
       />
 
-
-      {/* =================================================
-          CONFIRM PESERTA BELUM MULAI
-      ================================================= */}
+      {/* CONFIRM EARLY MEMBER */}
 
       <ConfirmModal
-        open={
-          !!konfirmasiMasukkan
-        }
-        onClose={() =>
-          setKonfirmasiMasukkan(
-            null
-          )
-        }
+        open={!!konfirmasiMasukkan}
+        onClose={() => setKonfirmasiMasukkan(null)}
         onConfirm={() => {
-          const {
-            groupId,
-            intern,
-          } =
-            konfirmasiMasukkan ??
-            {};
+          const { groupId, intern } = konfirmasiMasukkan ?? {};
 
-          setKonfirmasiMasukkan(
-            null
-          );
+          setKonfirmasiMasukkan(null);
 
-          if (
-            groupId &&
-            intern
-          ) {
-            eksekusiMasukkan(
-              groupId,
-              intern.id
-            );
+          if (groupId && intern) {
+            eksekusiMasukkan(groupId, intern.id);
           }
         }}
-        busy={
-          busy
-        }
+        busy={busy}
         judul={
           konfirmasiMasukkan
             ? `Masukkan "${konfirmasiMasukkan.intern.nama_lengkap}"?`
@@ -1420,16 +1071,15 @@ export default function Groups() {
         }
         teks={
           konfirmasiMasukkan
-            ? `⚠️ Peserta ini BELUM memulai masa magang (mulai ${fmtTanggal(
-                konfirmasiMasukkan
-                  .intern
-                  .tanggal_mulai
-              )}). Dia tetap bisa dimasukkan untuk persiapan, namun TIDAK akan bisa diberi tugas sampai masa magangnya dimulai.`
+            ? `Peserta ini BELUM memulai masa magang (mulai ${fmtTanggal(
+                konfirmasiMasukkan.intern.tanggal_mulai
+              )}). Peserta dapat ditempatkan untuk persiapan, tetapi belum dapat diberi tugas sampai periode magang dimulai.`
             : ''
         }
         teksConfirm="Tetap Masukkan"
         tipe="warn"
       />
+
     </div>
   );
 }
